@@ -26,13 +26,14 @@ eth_usdt_bid = None
 eth_btc_bid = None
 
 # trading fee
-fee = 0.001 #0.01 = 1%
+fee = 0.0000 #0.01 = 1%
 
 # fees multiplier for 3 transactions
 fee3 = (1-fee)**3
 cash = 1000000
 cash_time = []
 arb_possible = []
+#buy_btc = []
 for i in range(df.shape[0]):
 
     if df['timestamps'][i]>lower_max_timestamps:
@@ -69,3 +70,14 @@ print(arb_possible)
 print(cash)
 print(len(arb_possible))
 print(len(cash_time))
+
+cash_time = np.array(cash_time)/1000000
+#time_day = np.array(range(len(cash_time)))/60/24
+
+import matplotlib.pyplot as plt
+plt.plot(cash_time)
+plt.title("Evolution of the cash position")
+plt.xlabel("Time")
+plt.ylabel("Cash ($M)")
+
+plt.show()
