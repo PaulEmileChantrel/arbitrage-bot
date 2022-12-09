@@ -5,19 +5,21 @@
 import pandas as pd
 import numpy as np
 
-
+# Loading the data
 df_btc_usdt = pd.read_csv('btcusdt_socket_book.csv').astype('float32')
 df_eth_usdt = pd.read_csv('ethusdt_socket_book.csv').astype('float32')
 df_eth_btc = pd.read_csv('ethbtc_socket_book.csv').astype('float32')
 
+# We add the market for each df
 df_btc_usdt['market'] = 'BTCUSDT'
 df_eth_usdt['market'] = 'ETHUSDT'
 df_eth_btc['market'] = 'ETHBTC'
 
-
+# We look for the lowest last timestamps amoung the 3 df
 lower_max_timestamps = min(df_btc_usdt['timestamps'].iloc[-1],df_eth_usdt['timestamps'].iloc[-1],df_eth_btc['timestamps'].iloc[-1])
-higher_min_timestamps = max(df_btc_usdt['timestamps'].iloc[0],df_eth_usdt['timestamps'].iloc[0],df_eth_btc['timestamps'].iloc[0])
+#higher_min_timestamps = max(df_btc_usdt['timestamps'].iloc[0],df_eth_usdt['timestamps'].iloc[0],df_eth_btc['timestamps'].iloc[0])
 
+#We merge the 3 df and sort them by ascending timestamps
 df = pd.concat([df_btc_usdt,df_eth_usdt,df_eth_btc],ignore_index=True)
 df.sort_values(by=['timestamps'],ascending=True,ignore_index=True,inplace=True)
 
@@ -32,8 +34,11 @@ fee = 0.0000 #0.01 = 1%
 fee3 = (1-fee)**3
 cash = 1000000
 cash_time = []
+
+# Variable to track when we are doing an arbitrage
 arb_possible = []
-#buy_btc = []
+
+
 for i in range(df.shape[0]):
 
     if df['timestamps'][i]>lower_max_timestamps:
@@ -59,6 +64,7 @@ for i in range(df.shape[0]):
             cash *= btc_usdt_bid*eth_btc_bid/eth_usdt_ask*fee3
             arb_possible.append(i)
 
+        # if we can make a profit with sell btc_usdt, sell eth_btc and buy eth_usdt
         elif btc_usdt_ask<eth_usdt_bid/eth_btc_ask*fee3:
             cash *= eth_usdt_bid/(btc_usdt_ask*eth_btc_ask)*fee3
             arb_possible.append(i)
@@ -66,13 +72,12 @@ for i in range(df.shape[0]):
 
 
 
-print(arb_possible)
+#print(arb_possible)
 print(cash)
 print(len(arb_possible))
 print(len(cash_time))
 
 cash_time = np.array(cash_time)/1000000
-#time_day = np.array(range(len(cash_time)))/60/24
 
 import matplotlib.pyplot as plt
 plt.plot(cash_time)
