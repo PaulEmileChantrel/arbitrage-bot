@@ -6,16 +6,16 @@ import pprint
 import time
 import sys
 
-def web_socket_book(ticker):
+def web_socket_book(market):
 
     # Websocket link
-    print(ticker)
-    SOCKET = "wss://stream.binance.com:9443/ws/"+ticker+"@bookTicker"
+    print(market)
+    SOCKET = "wss://stream.binance.com:9443/ws/"+market+"@bookTicker"
 
 
     df = pd.DataFrame(columns=['timestamps','bid_qty','bid_price','ask_qty','ask_price'])
     i = 0
-
+    imax = 10000 if market !='ethbtc' else 1500
 
     # Function called when the websocket is open
     def on_open(ws):
@@ -25,14 +25,14 @@ def web_socket_book(ticker):
     def on_close(ws):
         print('Closing connection')
         nonlocal df
-        df.to_csv(ticker+'_socket_book.csv')
+        df.to_csv(market+'_socket_book.csv')
 
 
     # Function called when the websocket receive a message
     def on_message(ws,message):
         #print('Message received')
         #print(message)
-        nonlocal df,i
+        nonlocal df,i,imax
 
         json_message = json.loads(message)
         #pprint.pprint(json_message)
@@ -42,8 +42,8 @@ def web_socket_book(ticker):
 
         i+=1
         print(i)
-        if i > 1000:
-            df.to_csv(ticker+'_socket_book.csv')
+        if i > imax:
+            df.to_csv(market+'_socket_book.csv')
             ws.close()
 
 
