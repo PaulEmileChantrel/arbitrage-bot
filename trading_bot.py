@@ -60,7 +60,6 @@ cash_time = np.array(cash_time)/1000000
 time_day = np.array(range(len(cash_time)))/60/24
 
 
-# We plot the cash position through time
 plt.plot(time_day,cash_time)
 plt.title("Evolution of the cash position")
 plt.xlabel("Time (day)")
