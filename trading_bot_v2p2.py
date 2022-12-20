@@ -50,12 +50,18 @@ for i in range(df.shape[0]):
     if df['market'][i] == 'BTCUSDT':
         btc_usdt_bid = df['bid_price'][i]
         btc_usdt_ask = df['ask_price'][i]
+        btc_usdt_bid_qty = df['bid_qty'][i]
+        btc_usdt_ask_qty = df['ask_qty'][i]
     elif df['market'][i] == 'ETHUSDT':
         eth_usdt_bid = df['bid_price'][i]
         eth_usdt_ask = df['ask_price'][i]
+        eth_usdt_bid_qty = df['bid_qty'][i]
+        eth_usdt_ask_qty = df['ask_qty'][i]
     else:
         eth_btc_bid = df['bid_price'][i]
         eth_btc_ask = df['ask_price'][i]
+        eth_btc_bid_qty = df['bid_qty'][i]
+        eth_btc_ask_qty = df['ask_qty'][i]
 
     # if all market is found once
     if all([btc_usdt_bid,eth_usdt_bid,eth_btc_bid]):
@@ -63,12 +69,33 @@ for i in range(df.shape[0]):
 
         # if we can make a profit with buy btc_usdt, buy eth_btc and sell eth_usdt
         if btc_usdt_bid*fee3>eth_usdt_ask/eth_btc_bid:
-            cash *= btc_usdt_bid*eth_btc_bid/eth_usdt_ask*fee3
+
+            # # btc qty in usdt
+            # btc_usdt_qty = btc_usdt_bid_qty*btc_usdt_bid
+            #
+            # # eth qty in usdt
+            # eth_usdt_qty = eth_usdt_ask_qty*eth_usdt_ask
+            #
+            # # looking for the biggest possible position
+            # if btc_usdt_qty>eth_usdt_qty:
+            #     position_max = min(eth_usdt_ask_qty,eth_btc_bid_qty)*eth_usdt_ask
+            # else:
+            #     postion_max = min(eth_btc_bid_qty*eth_btc_bid,btc_usdt_bid_qty)*btc_usdt_bid
+
+            # looking for the biggest possible position with the current order book
+            postion_max = min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
+            cash-=postion_max
+            postion_max *= btc_usdt_bid*eth_btc_bid/eth_usdt_ask*fee3
+            cash+=postion_max
             arb_possible.append(i)
 
         # if we can make a profit with sell btc_usdt, sell eth_btc and buy eth_usdt
         elif btc_usdt_ask<eth_usdt_bid/eth_btc_ask*fee3:
-            cash *= eth_usdt_bid/(btc_usdt_ask*eth_btc_ask)*fee3
+            # looking for the biggest possible position with the current order book
+            postion_max = min(eth_btc_ask_qty*eth_btc_ask*btc_usdt_ask,btc_usdt_ask_qty*btc_usdt_ask,eth_usdt_bid_qty*eth_usdt_bid,eth_btc_ask_qty*eth_usdt_bid,cash)
+            cash-=postion_max
+            postion_max *= eth_usdt_bid/(btc_usdt_ask*eth_btc_ask)*fee3
+            cash+=postion_max
             arb_possible.append(i)
         cash_time.append(cash)
 
@@ -76,10 +103,9 @@ for i in range(df.shape[0]):
 
 #print(arb_possible)
 print(cash)
-print((cash/1000000-1)*100)
 print(len(arb_possible))
 print(len(cash_time))
-
+print((cash/1000000-1)*100)
 cash_time = np.array(cash_time)/1000000
 
 import matplotlib.pyplot as plt
