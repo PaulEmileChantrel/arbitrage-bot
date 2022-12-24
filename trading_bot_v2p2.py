@@ -70,23 +70,18 @@ for i in range(df.shape[0]):
         # if we can make a profit with buy btc_usdt, buy eth_btc and sell eth_usdt
         if btc_usdt_bid*fee3>eth_usdt_ask/eth_btc_bid:
 
-            # # btc qty in usdt
-            # btc_usdt_qty = btc_usdt_bid_qty*btc_usdt_bid
-            #
-            # # eth qty in usdt
-            # eth_usdt_qty = eth_usdt_ask_qty*eth_usdt_ask
-            #
-            # # looking for the biggest possible position
-            # if btc_usdt_qty>eth_usdt_qty:
-            #     position_max = min(eth_usdt_ask_qty,eth_btc_bid_qty)*eth_usdt_ask
-            # else:
-            #     postion_max = min(eth_btc_bid_qty*eth_btc_bid,btc_usdt_bid_qty)*btc_usdt_bid
-
             # looking for the biggest possible position with the current order book
-            postion_max = min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
-            cash-=postion_max
-            postion_max *= btc_usdt_bid*eth_btc_bid/eth_usdt_ask*fee3
-            cash+=postion_max
+            position_max = min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
+
+            # position_max is the biggest cash position we can take from this move,
+            # step 1 : We withdraw it from our cash reserve
+            cash-=position_max
+            # step 2 : We multiply by the gain we can make on this position
+            position_max *= btc_usdt_bid*eth_btc_bid/eth_usdt_ask*fee3
+            # step 3 : we add it back to the cash
+            cash+=position_max
+
+            #keep track of when an arbitrage is possible
             arb_possible.append(i)
 
         # if we can make a profit with sell btc_usdt, sell eth_btc and buy eth_usdt

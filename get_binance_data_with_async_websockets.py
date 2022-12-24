@@ -120,7 +120,9 @@ class Binance_depth(Client):
     def on_open(self,ws):
         print('Opening connection!')
 
-
+    def on_close(self,*args,**kwargs):
+        Binance_bookTicker.close_all()
+        Binance_depth.close_all()
 
     @classmethod
     def close_all(cls):
@@ -133,7 +135,7 @@ class Binance_depth(Client):
 
 
 if __name__ == '__main__':
-    i_max = 100000
+    i_max = 10000
     binance_btcusdt = Binance_bookTicker('btcusdt',i_max)
     binance_ethusdt = Binance_bookTicker('ethusdt',i_max)
     binance_ethbtc = Binance_bookTicker('ethbtc',i_max)
