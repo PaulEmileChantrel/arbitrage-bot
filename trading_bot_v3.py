@@ -21,7 +21,7 @@ def get_full_book(df,i):
     return bid_price,bid_qty,ask_price,ask_qty
 
 
-def find_position_max(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_btc_bid_qty,eth_usdt_ask_price,eth_usdt_ask_qty,cash):
+def find_position_max(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_btc_bid_qty,eth_usdt_ask_price,eth_usdt_ask_qty,cash,fee3):
     #return the biggest cash position we can take on a trade
     # we have 3 trades cash-> btc, btc->eth, eth-> cash
 
@@ -42,16 +42,34 @@ def find_position_max(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_
     eth_qty = eth_btc_bid_qty * max_btc / max_btc_bid
 
     # step 3: compare eth_qty with est qty in eth_usdt
-    max_eth_ask = eth_usdt_ask_qty * eth_usdt_ask_price
+    max_eth_ask = eth_usdt_ask_qty #* eth_usdt_ask_price
     max_eth = min(eth_qty,max_eth_bid)
     eth_ask_qty = eth_usdt_ask_qty * max_eth / max_eth_ask
 
     #step 4 : convert in usdt (we don't need to compare with cash)
     position_max = eth_ask_qty*eth_usdt_ask_price
 
-    #to update the new bids/asks qty, we need to backpropagate the max postion
+    #variation of the position_max
+    position_max_var *= btc_usdt_bid*eth_btc_bid/eth_usdt_ask*fee3
 
-    
+    #to update the new bids/asks qty, we need to backpropagate the max postion
+    eth_usdt_ask_qty -= max_eth
+    if eth_usdt_ask_qty == 0:
+        #update price from full book
+        #update qty from full book
+    eth_qty = max_eth
+    max_btc = eth_qty * max_btc_bid / eth_btc_bid_qty
+
+    eth_btc_bid_qty -= max_btc / eth_btc_bid_price
+
+    if eth_btc_bid_qty == 0:
+        #update price and qty
+    btc_qty = max_btc
+    max_usdt = max_usdt_bid * btc_qty / btc_usdt_bid_qty
+    btc_usdt_bid_qty -= max_usdt / btc_usdt_bid_price
+
+    if btc_usdt_bid_qty == 0:
+        #update price and qty
     return position_max
 
 
