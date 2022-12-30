@@ -80,7 +80,7 @@ class Binance_bookTicker(Client):
     def close_all(cls):
         for self_ in Binance_bookTicker.instance_list:
             print(f'Closing {self_.market}')
-            self_.df.to_csv(self_.market+'_socket_book_async2.csv')
+            self_.df.to_csv(self_.market+'_socket_book_async.csv',index=False)
             self_.ws.close()
             len_df = self_.df.shape[0]
             print(f'{self_.market} closed with {len_df} data points')
@@ -105,7 +105,7 @@ class Binance_depth(Client):
 
         df_socket = pd.DataFrame({'timestamps':[time.time()],'id':[json_message['lastUpdateId']]})
         for i in range(len(json_message['bids'])):
-            bid_qty = 'bid_qty_'+str(i)
+            bid_qty = 'bid_qty'+str(i)
             bid_price = 'bid_price'+str(i)
             ask_qty = 'ask_qty'+str(i)
             ask_price = 'ask_price'+str(i)
@@ -128,14 +128,14 @@ class Binance_depth(Client):
     def close_all(cls):
         for self_ in Binance_depth.instance_list:
             print(f'Closing {self_.market}')
-            self_.df.to_csv(self_.market+'_socket_full_book_async.csv')
+            self_.df.to_csv(self_.market+'_socket_full_book_async.csv',index=False)
             self_.ws.close()
             len_df = self_.df.shape[0]
             print(f'{self_.market} full book closed with {len_df} data points')
 
 
 if __name__ == '__main__':
-    i_max = 10000
+    i_max = 30000
     binance_btcusdt = Binance_bookTicker('btcusdt',i_max)
     binance_ethusdt = Binance_bookTicker('ethusdt',i_max)
     binance_ethbtc = Binance_bookTicker('ethbtc',i_max)
