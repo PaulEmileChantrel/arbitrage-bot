@@ -42,6 +42,25 @@ We only generate 0.076% over the period (instead of 90% for the V2.1):
 </p>
 
 
+### Version 3
 
+On the third version, we also get the book data with a depth of 20 for both bids and asks.
+Every time we make a trade, we update our data to reflect the change in supply.
 
+With 0 fees we have the following graph : 
+<p align='center'>
+<img src='https://user-images.githubusercontent.com/96018383/210090953-e18a2178-2eac-48b8-a061-c1f0c453bb36.png'>
+</p>
 
+And with 0.1% fee per trades, we have the following one :
+<p align='center'>
+<img src='https://user-images.githubusercontent.com/96018383/210091053-0d4d0a56-942b-4aa8-ae7f-62b17f48ff4c.png'>
+</p>
+
+### Version 4 (Todo)
+
+Merge the data collect and the trade part
+
+### Version 5 (Todo)
+Deploy live with real trade
+Add taker
