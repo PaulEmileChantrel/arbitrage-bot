@@ -20,6 +20,7 @@ def get_full_book(df,i):
         ask_qty.append(row['ask_qty'+str(i)])
     return bid_price,bid_qty,ask_price,ask_qty
 
+epsilon = 10**-12
 
 def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_btc_bid_qty,eth_usdt_ask_price,eth_usdt_ask_qty,cash,fee3,eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty,btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty):
     #return the biggest cash position we can take on a trade
@@ -29,6 +30,7 @@ def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth
     # step 1 : compare cash vs usdt_qty in btc_usdt
 
     #maximum amount of usdt on the bid side for btc_usdt
+    #print(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_usdt_ask_price)
     max_usdt_bid = btc_usdt_bid_price*btc_usdt_bid_qty #usdt
     #maximum amount of usdt we can buy
     max_usdt_pos = min(cash,max_usdt_bid)   #usdt
@@ -43,7 +45,7 @@ def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth
 
     # step 3: compare eth_qty with est qty in eth_usdt
     max_eth_ask = eth_usdt_ask_qty #eth
-    max_eth = min(eth_qty,max_eth_bid) #eth
+    max_eth = min(eth_qty,max_eth_ask) #eth
     eth_ask_qty = max_eth   #eth
 
     #step 4 : convert in usdt (we don't need to compare with cash)
@@ -52,36 +54,40 @@ def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth
     #variation of the position_max
     cash -= position_max
 
-    position_max *= btc_usdt_bid*eth_btc_bid/eth_usdt_ask*fee3
+    position_max *= btc_usdt_bid_price*eth_btc_bid_price/eth_usdt_ask_price*fee3
     cash += position_max
 
     #to update the new bids/asks qty, we need to backpropagate the max postion
     eth_usdt_ask_qty -= max_eth
-    if eth_usdt_ask_qty <= 0:
+
+    if eth_usdt_ask_qty <= epsilon and eth_usdt_full_book_bid_qty!=[]:
         #update price from full book
         #update qty from full book
         eth_usdt_ask_qty = eth_usdt_full_book_ask_qty.pop(0)
         eth_usdt_ask_price = eth_usdt_full_book_ask_price.pop(0)
-
+    elif eth_usdt_full_book_bid_qty==[]:
+        eth_usdt_ask_price = float('infinity')
     eth_qty = max_eth #eth
     max_btc = eth_qty * max_btc_bid / eth_btc_bid_qty #btc
 
     eth_btc_bid_qty -= max_btc / eth_btc_bid_price #eth
 
-    if eth_btc_bid_qty <= 0:
+    if eth_btc_bid_qty <= epsilon and eth_btc_full_book_bid_qty!=[]:
         #update price and qty
         eth_btc_bid_qty = eth_btc_full_book_bid_qty.pop(0)
         eth_btc_bid_price = eth_btc_full_book_bid_price.pop(0)
-
+    elif eth_btc_full_book_bid_qty==[]:
+        eth_btc_bid_price = 10**-15
     btc_qty = max_btc #btc
     max_usdt = max_usdt_bid * btc_qty / btc_usdt_bid_qty #usdt
     btc_usdt_bid_qty -= max_usdt / btc_usdt_bid_price #btc
 
-    if btc_usdt_bid_qty <= 0:
+    if btc_usdt_bid_qty <= epsilon and btc_usdt_full_book_bid_qty!=[]:
         #update price and qty
         btc_usdt_bid_qty = btc_usdt_full_book_bid_qty.pop(0)
         btc_usdt_bid_price = btc_usdt_full_book_bid_price.pop(0)
-
+    elif btc_usdt_full_book_bid_qty==[]:
+        btc_usdt_bid_price = float('-infinity')
     return cash,btc_usdt_bid_qty,btc_usdt_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_bid_price,eth_btc_bid_qty,eth_btc_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_bid_price,eth_usdt_ask_qty,eth_usdt_ask_price,eth_usdt_full_book_ask_qty,eth_usdt_full_book_ask_price
 
 def find_position_max2(btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth_btc_ask_qty,eth_usdt_bid_price,eth_usdt_bid_qty,cash,fee3,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty,eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty):
@@ -114,34 +120,38 @@ def find_position_max2(btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth
     #variation of the position_max
     cash -= position_max
 
-    position_max *= eth_usdt_bid/(btc_usdt_ask*eth_btc_ask)*fee3
+    position_max *= eth_usdt_bid_price/(btc_usdt_ask_price*eth_btc_ask_price)*fee3
     cash += position_max
 
 
     #to update the new bids/asks qty, we need to backpropagate the max postion
     btc_usdt_ask_qty -= max_btc
-    if btc_usdt_ask_qty <= 0:
+    #print(btc_usdt_full_book_ask_price)
+    if btc_usdt_ask_qty <= epsilon and btc_usdt_full_book_ask_qty!=[]:
         #update price from full book
         #update qty from full book
         btc_usdt_ask_qty = btc_usdt_full_book_ask_qty.pop(0)
         btc_usdt_ask_price = btc_usdt_full_book_ask_price.pop(0)
-
+    elif btc_usdt_full_book_ask_qty==[]:
+        btc_usdt_ask_price = float('infinity')
     max_eth = max_btc / eth_btc_ask_price
     eth_btc_ask_qty -= max_eth
 
-    if eth_btc_ask_qty <= 0:
+    if eth_btc_ask_qty <= epsilon and eth_btc_full_book_ask_qty!=[]:
         #update price and qty
         eth_btc_ask_qty = eth_btc_full_book_ask_qty.pop(0)
         eth_btc_ask_price = eth_btc_full_book_ask_price.pop(0)
-
+    elif eth_btc_full_book_ask_qty==[]:
+        eth_btc_ask_price = float('-infinity')
     #max_usdt = max_eth * max_usdt_bid / eth_usdt_bid_qty
     eth_usdt_bid_qty -= max_eth
 
-    if eth_usdt_bid_qty <= 0:
+    if eth_usdt_bid_qty <= epsilon and eth_usdt_full_book_bid_qty!=[]:
         #update price and qty
         eth_usdt_bid_qty = eth_usdt_full_book_bid_qty.pop(0)
         eth_usdt_bid_price = eth_usdt_full_book_bid_price.pop(0)
-
+    elif eth_usdt_full_book_bid_price==[]:
+        eth_usdt_bid_price = -1
     return cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price
 # Loading the data
 df_btc_usdt = pd.read_csv('btcusdt_socket_book_async.csv').astype('float32')
@@ -182,8 +192,10 @@ print(higher_min_timestamps,lower_max_timestamps)
 
 #We merge the 3 df and sort them by ascending timestamps
 df = pd.concat([df_btc_usdt,df_eth_usdt,df_eth_btc,df_btc_usdt_full_book,df_eth_usdt_full_book,df_eth_btc_full_book],ignore_index=True)
+print(df.shape)
 df.sort_values(by=['timestamps'],ascending=True,ignore_index=True,inplace=True)
 df.to_csv('full_df_v3.csv',index=False)
+
 btc_usdt_bid_price = None
 eth_usdt_bid_price = None
 eth_btc_bid_price = None
@@ -192,11 +204,11 @@ eth_usdt_full_book_bid_price = []
 eth_btc_full_book_bid_price = []
 
 # trading fee
-fee = 0.0000 #0.01 = 1%
+fee = 0.00 #0.01 = 1%
 
 # fees multiplier for 3 transactions
 fee3 = (1-fee)**3
-cash = 1000000
+cash = start_cash = 1000
 cash_time = []
 
 # Variable to track when we are doing an arbitrage
@@ -244,7 +256,6 @@ for i in range(df.shape[0]):
 
             # looking for the biggest possible position with the current order book
             cash,btc_usdt_bid_qty,btc_usdt_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_bid_price,eth_btc_bid_qty,eth_btc_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_bid_price,eth_usdt_ask_qty,eth_usdt_ask_price,eth_usdt_full_book_ask_qty,eth_usdt_full_book_ask_price = find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_btc_bid_qty,eth_usdt_ask_price,eth_usdt_ask_qty,cash,fee3,eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty,btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty)#min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
-
             #keep track of when an arbitrage is possible
             arb_possible.append(i)
 
@@ -255,6 +266,7 @@ for i in range(df.shape[0]):
 
             arb_possible.append(i)
         cash_time.append(cash)
+        print(i,cash)
 
 
 
@@ -262,8 +274,8 @@ for i in range(df.shape[0]):
 print(cash)
 print(len(arb_possible))
 print(len(cash_time))
-print((cash/1000000-1)*100)
-cash_time = np.array(cash_time)/1000000
+print((cash/start_cash-1)*100)
+cash_time = np.array(cash_time)-start_cash
 
 import matplotlib.pyplot as plt
 plt.plot(cash_time)
