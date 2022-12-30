@@ -29,31 +29,32 @@ def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth
     # step 1 : compare cash vs usdt_qty in btc_usdt
 
     #maximum amount of usdt on the bid side for btc_usdt
-    max_usdt_bid = btc_usdt_bid_price*btc_usdt_bid_qty
+    max_usdt_bid = btc_usdt_bid_price*btc_usdt_bid_qty #usdt
     #maximum amount of usdt we can buy
-    max_usdt = min(cash,max_usdt_bid)
+    max_usdt_pos = min(cash,max_usdt_bid)   #usdt
     #maximum amount of btc that can be bought with this amount of usdt
-    btc_qty = btc_usdt_bid_qty * max_usdt / max_usdt_bid
+    btc_qty = btc_usdt_bid_qty * max_usdt_pos / max_usdt_bid    #btc
 
 
     # step 2 :  compare btc_qty vs btc qty in eth_btc
-    max_btc_bid = eth_btc_bid_price*eth_btc_bid_qty
-    max_btc = min(btc_qty,max_btc_bid)
-    eth_qty = eth_btc_bid_qty * max_btc / max_btc_bid
+    max_btc_bid = eth_btc_bid_price*eth_btc_bid_qty #btc
+    max_btc = min(btc_qty,max_btc_bid) #btc
+    eth_qty = eth_btc_bid_qty * max_btc / max_btc_bid #eth
 
     # step 3: compare eth_qty with est qty in eth_usdt
-    max_eth_ask = eth_usdt_ask_qty #* eth_usdt_ask_price
-    max_eth = min(eth_qty,max_eth_bid)
-    eth_ask_qty = eth_usdt_ask_qty * max_eth / max_eth_ask
+    max_eth_ask = eth_usdt_ask_qty #eth
+    max_eth = min(eth_qty,max_eth_bid) #eth
+    eth_ask_qty = max_eth   #eth
 
     #step 4 : convert in usdt (we don't need to compare with cash)
-    position_max = eth_ask_qty*eth_usdt_ask_price
+    position_max = eth_ask_qty*eth_usdt_ask_price #usdt
 
     #variation of the position_max
     cash -= position_max
 
     position_max *= btc_usdt_bid*eth_btc_bid/eth_usdt_ask*fee3
     cash += position_max
+
     #to update the new bids/asks qty, we need to backpropagate the max postion
     eth_usdt_ask_qty -= max_eth
     if eth_usdt_ask_qty == 0:
@@ -62,19 +63,19 @@ def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth
         eth_usdt_ask_qty = eth_usdt_full_book_ask_qty.pop(0)
         eth_usdt_ask_price = eth_usdt_full_book_ask_price.pop(0)
 
-    eth_qty = max_eth
-    max_btc = eth_qty * max_btc_bid / eth_btc_bid_qty
+    eth_qty = max_eth #eth
+    max_btc = eth_qty * max_btc_bid / eth_btc_bid_qty #btc
 
-    eth_btc_bid_qty -= max_btc / eth_btc_bid_price
+    eth_btc_bid_qty -= max_btc / eth_btc_bid_price #eth
 
     if eth_btc_bid_qty == 0:
         #update price and qty
         eth_btc_bid_qty = eth_btc_full_book_bid_qty.pop(0)
         eth_btc_bid_price = eth_btc_full_book_bid_price.pop(0)
 
-    btc_qty = max_btc
-    max_usdt = max_usdt_bid * btc_qty / btc_usdt_bid_qty
-    btc_usdt_bid_qty -= max_usdt / btc_usdt_bid_price
+    btc_qty = max_btc #btc
+    max_usdt = max_usdt_bid * btc_qty / btc_usdt_bid_qty #usdt
+    btc_usdt_bid_qty -= max_usdt / btc_usdt_bid_price #btc
 
     if btc_usdt_bid_qty == 0:
         #update price and qty
