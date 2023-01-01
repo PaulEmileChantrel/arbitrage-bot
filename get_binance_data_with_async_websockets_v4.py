@@ -6,7 +6,7 @@ import pprint
 import time
 import sys
 import threading
-#from trading_bot_v4 import *
+from trading_bot_v4 import make_trade
 
 class Client(threading.Thread):
 
@@ -57,7 +57,7 @@ class Binance_bookTicker(Client):
 
     def on_message(self,ws,message):
 
-        global market_dict
+        global market_dict,full_book_market_dict
         json_message = json.loads(message)
         #pprint.pprint(json_message)
         market_dict[self.market] = {'bid_qty':[json_message['B']],'bid_price':[json_message['b']],'ask_qty':[json_message['A']],'ask_price':[json_message['a']]}
@@ -105,7 +105,7 @@ class Binance_depth(Client):
 
     def on_message(self,ws,message):
 
-        global full_book_market_dict
+        global full_book_market_dict,market_dict
         json_message = json.loads(message)
         #pprint.pprint(json_message)
         # Step 1 -> update data
