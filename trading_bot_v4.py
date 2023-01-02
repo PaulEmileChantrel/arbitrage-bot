@@ -1,22 +1,26 @@
 import pandas as pd
 import numpy as np
-
+import pprint
 
 def get_full_book(full_book_market_dict,market):
-    book = full_book_market_dict[market]
-    bid_price = []
-    bid_qty = []
-    ask_price = []
-    ask_qty = []
+    #pprint.pprint(full_book_market_dict)
+    book = full_book_market_dict[market].copy()
+    #pprint.pprint(book)
+    if book is None:
+        return None,None,None,None
+    bid_price = book['bid_price']
+    bid_qty = book['bid_qty']
+    ask_price = book['ask_price']
+    ask_qty = book['ask_qty']
 
-    for i in range(1,20):
-        bid_price.append(book[i]['bid_price'])
-        bid_qty.append(book[i]['bid_qty'])
-        ask_price.append(book[i]['ask_price'])
-        ask_qty.append(book[i]['ask_qty'])
     return bid_price,bid_qty,ask_price,ask_qty
 
-
+def update_full_book(sub_full_book_market_dict,bid_price,bid_qty,ask_price,ask_qty):
+    sub_full_book_market_dict['bid_price'] = bid_price
+    sub_full_book_market_dict['bid_qty'] = bid_qty
+    sub_full_book_market_dict['ask_price'] = ask_price
+    sub_full_book_market_dict['ask_qty'] = ask_qty
+    return sub_full_book_market_dict
 
 def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_btc_bid_qty,eth_usdt_ask_price,eth_usdt_ask_qty,cash,fee3,eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty,btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty):
     #return the biggest cash position we can take on a trade
@@ -56,12 +60,12 @@ def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth
     #to update the new bids/asks qty, we need to backpropagate the max postion
     eth_usdt_ask_qty -= max_eth
 
-    if eth_usdt_ask_qty <= epsilon and eth_usdt_full_book_bid_qty!=[]:
+    if eth_usdt_ask_qty <= epsilon and eth_usdt_full_book_ask_qty!=[]:
         #update price from full book
         #update qty from full book
         eth_usdt_ask_qty = eth_usdt_full_book_ask_qty.pop(0)
         eth_usdt_ask_price = eth_usdt_full_book_ask_price.pop(0)
-    elif eth_usdt_full_book_bid_qty==[]:
+    elif eth_usdt_full_book_ask_qty==[]:
         eth_usdt_ask_price = float('infinity')
     eth_qty = max_eth #eth
     max_btc = eth_qty * max_btc_bid / eth_btc_bid_qty #btc
@@ -149,36 +153,38 @@ def find_position_max2(btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth
     elif eth_usdt_full_book_bid_price==[]:
         eth_usdt_bid_price = -1
     return cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price
-
+epsilon = 10**-12
 def make_trade(market_dict,full_book_market_dict,cash):
     #Make a trade if possible
 
-    epsilon = 10**-12
+    start_cash = cash
     # trading fee
-    fee = 0.00 #0.01 = 1%
+    fee = 0.001 #0.01 = 1%
 
     # fees multiplier for 3 transactions
     fee3 = (1-fee)**3
 
+    btc_usdt_bid_price = float(market_dict['btcusdt']['bid_price'])
+    btc_usdt_ask_price = float(market_dict['btcusdt']['ask_price'])
+    btc_usdt_bid_qty = float(market_dict['btcusdt']['bid_qty'])
+    btc_usdt_ask_qty = float(market_dict['btcusdt']['ask_qty'])
 
-    btc_usdt_bid_price = market_dict['btcusdt']['bid_price']
-    btc_usdt_ask_price = market_dict['btcusdt']['ask_price']
-    btc_usdt_bid_qty = market_dict['btcusdt']['bid_qty']
-    btc_usdt_ask_qty = market_dict['btcusdt']['ask_qty']
+    eth_usdt_bid_price = float(market_dict['ethusdt']['bid_price'])
+    eth_usdt_ask_price = float(market_dict['ethusdt']['ask_price'])
+    eth_usdt_bid_qty = float(market_dict['ethusdt']['bid_qty'])
+    eth_usdt_ask_qty = float(market_dict['ethusdt']['ask_qty'])
 
-    eth_usdt_bid_price = market_dict['ethusdt']['bid_price']
-    eth_usdt_ask_price = market_dict['ethusdt']['ask_price']
-    eth_usdt_bid_qty = market_dict['ethusdt']['bid_qty']
-    eth_usdt_ask_qty = market_dict['ethusdt']['ask_qty']
-
-    eth_btc_bid_price = market_dict['ethbtc']['bid_price']
-    eth_btc_ask_price = market_dict['ethbtc']['ask_price']
-    eth_btc_bid_qty = market_dict['ethbtc']['bid_qty']
-    eth_btc_ask_qty = market_dict['ethbtc']['ask_qty']
+    eth_btc_bid_price = float(market_dict['ethbtc']['bid_price'])
+    eth_btc_ask_price = float(market_dict['ethbtc']['ask_price'])
+    eth_btc_bid_qty = float(market_dict['ethbtc']['bid_qty'])
+    eth_btc_ask_qty = float(market_dict['ethbtc']['ask_qty'])
+    #print(full_book_market_dict['ethusdt'])
 
     btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty = get_full_book(full_book_market_dict,'btcusdt')
     eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty = get_full_book(full_book_market_dict,'ethusdt')
     eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty = get_full_book(full_book_market_dict,'ethbtc')
+
+    #print(eth_usdt_full_book_bid_qty)
     # if all market is found once
     if all([btc_usdt_bid_price,eth_usdt_bid_price,eth_btc_bid_price])and all([btc_usdt_full_book_bid_price,eth_usdt_full_book_bid_price,eth_btc_full_book_bid_price]):
 
@@ -194,25 +200,30 @@ def make_trade(market_dict,full_book_market_dict,cash):
             # looking for the biggest possible position with the current order book
             cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price = find_position_max2(btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth_btc_ask_qty,eth_usdt_bid_price,eth_usdt_bid_qty,cash,fee3,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty,eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty)#min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
 
-    #add changes to dictionaries
-    market_dict['btcusdt']['bid_price'] = btc_usdt_bid_price
-    market_dict['btcusdt']['ask_price'] = btc_usdt_ask_price
-    market_dict['btcusdt']['bid_qty'] = btc_usdt_bid_qty
-    market_dict['btcusdt']['ask_qty'] = btc_usdt_ask_qty
+        #add changes to dictionaries
 
-    market_dict['ethusdt']['bid_price'] = eth_usdt_bid_price
-    market_dict['ethusdt']['ask_price'] = eth_usdt_ask_price
-    market_dict['ethusdt']['bid_qty'] = eth_usdt_bid_qty
-    market_dict['ethusdt']['ask_qty'] = eth_usdt_ask_qty
+        market_dict['btcusdt']['bid_price'] = btc_usdt_bid_price
+        market_dict['btcusdt']['ask_price'] = btc_usdt_ask_price
+        market_dict['btcusdt']['bid_qty'] = btc_usdt_bid_qty
+        market_dict['btcusdt']['ask_qty'] = btc_usdt_ask_qty
 
-    market_dict['ethbtc']['bid_price'] = eth_btc_bid_price
-    market_dict['ethbtc']['ask_price'] = eth_btc_ask_price
-    market_dict['ethbtc']['bid_qty'] = eth_btc_bid_qty
-    market_dict['ethbtc']['ask_qty'] = eth_btc_ask_qty
+        market_dict['ethusdt']['bid_price'] = eth_usdt_bid_price
+        market_dict['ethusdt']['ask_price'] = eth_usdt_ask_price
+        market_dict['ethusdt']['bid_qty'] = eth_usdt_bid_qty
+        market_dict['ethusdt']['ask_qty'] = eth_usdt_ask_qty
 
-    # update full_book
+        market_dict['ethbtc']['bid_price'] = eth_btc_bid_price
+        market_dict['ethbtc']['ask_price'] = eth_btc_ask_price
+        market_dict['ethbtc']['bid_qty'] = eth_btc_bid_qty
+        market_dict['ethbtc']['ask_qty'] = eth_btc_ask_qty
 
+        # update full_book
 
+        full_book_market_dict['btcusdt'] = update_full_book(full_book_market_dict['btcusdt'],btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty)
+        full_book_market_dict['ethusdt'] = update_full_book(full_book_market_dict['ethusdt'],eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty)
+        full_book_market_dict['ethbtc'] = update_full_book(full_book_market_dict['ethbtc'],eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty)
+    if start_cash<=cash:
+        print(cash)
     return market_dict,full_book_market_dict,cash
 
 

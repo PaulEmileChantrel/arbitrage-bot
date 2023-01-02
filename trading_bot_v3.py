@@ -60,12 +60,12 @@ def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth
     #to update the new bids/asks qty, we need to backpropagate the max postion
     eth_usdt_ask_qty -= max_eth
 
-    if eth_usdt_ask_qty <= epsilon and eth_usdt_full_book_bid_qty!=[]:
+    if eth_usdt_ask_qty <= epsilon and eth_usdt_full_book_ask_qty!=[]:
         #update price from full book
         #update qty from full book
         eth_usdt_ask_qty = eth_usdt_full_book_ask_qty.pop(0)
         eth_usdt_ask_price = eth_usdt_full_book_ask_price.pop(0)
-    elif eth_usdt_full_book_bid_qty==[]:
+    elif eth_usdt_full_book_ask_qty==[]:
         eth_usdt_ask_price = float('infinity')
     eth_qty = max_eth #eth
     max_btc = eth_qty * max_btc_bid / eth_btc_bid_qty #btc

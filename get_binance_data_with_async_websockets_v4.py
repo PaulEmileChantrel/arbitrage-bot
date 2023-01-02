@@ -7,7 +7,7 @@ import time
 import sys
 import threading
 from trading_bot_v4 import make_trade
-
+import traceback
 class Client(threading.Thread):
 
     def __init__(self,socket):
@@ -26,8 +26,9 @@ class Client(threading.Thread):
 
     # catch errors
     def on_error(self, ws,E):
-        print('error')
-        print(E)
+        # print('error')
+        # print(E)
+        traceback.print_exc()
 
 
     # run when websocket is closed
@@ -57,11 +58,12 @@ class Binance_bookTicker(Client):
 
     def on_message(self,ws,message):
 
-        global market_dict,full_book_market_dict
+        global market_dict,full_book_market_dict,cash
         json_message = json.loads(message)
         #pprint.pprint(json_message)
-        market_dict[self.market] = {'bid_qty':[json_message['B']],'bid_price':[json_message['b']],'ask_qty':[json_message['A']],'ask_price':[json_message['a']]}
-        pprint.pprint(market_dict)
+        market_dict[self.market] = {'bid_qty':json_message['B'],'bid_price':json_message['b'],'ask_qty':json_message['A'],'ask_price':json_message['a']}
+        
+        #pprint.pprint(market_dict)
         # We can also save the data if needed
         #df_socket = pd.DataFrame({'timestamps':[time.time()],'id':[json_message['u']],'bid_qty':[json_message['B']],'bid_price':[json_message['b']],'ask_qty':[json_message['A']],'ask_price':[json_message['a']]})
         #self.df = pd.concat([self.df,df_socket],ignore_index=True)
@@ -73,6 +75,7 @@ class Binance_bookTicker(Client):
             # ws.close()
             Binance_bookTicker.close_all()
             Binance_depth.close_all()
+        market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash)
 
     def on_open(self,ws):
         print('Opening connection!')
@@ -81,7 +84,7 @@ class Binance_bookTicker(Client):
 
     @classmethod
     def close_all(cls):
-        global market_dict
+        global market_dict,cash
 
         for self_ in Binance_bookTicker.instance_list:
             print(f'Closing {self_.market}')
@@ -89,7 +92,8 @@ class Binance_bookTicker(Client):
             self_.ws.close()
             len_df = self_.df.shape[0]
             print(f'{self_.market} closed with {len_df} data points')
-        pprint.pprint(market_dict)
+        #pprint.pprint(market_dict)
+        print(cash)
 
 class Binance_depth(Client):
     instance_list = []
@@ -105,16 +109,26 @@ class Binance_depth(Client):
 
     def on_message(self,ws,message):
 
-        global full_book_market_dict,market_dict
+        global full_book_market_dict,market_dict,cash
         json_message = json.loads(message)
         #pprint.pprint(json_message)
         # Step 1 -> update data
         # Step 2 -> make trade
 
         #df_socket = pd.DataFrame({'timestamps':[time.time()],'id':[json_message['lastUpdateId']]})
-        full_book_market_dict[self.market] = [] #reset to the new book
+
+        bid_price = []
+        bid_qty = []
+        ask_price = []
+        ask_qty = []
+
         for i in range(len(json_message['bids'])):
-            full_book_market_dict[self.market].append({'bid_qty':json_message['bids'][i][1],'bid_price':json_message['bids'][i][0],'ask_qty':json_message['asks'][i][1],'ask_price':json_message['asks'][i][0]})
+            bid_price.append(float(json_message['bids'][i][0]))
+            bid_qty.append(float(json_message['bids'][i][1]))
+            ask_price.append(float(json_message['asks'][i][0]))
+            ask_qty.append(float(json_message['asks'][i][1]))
+
+
             # bid_qty = 'bid_qty'+str(i)
             # bid_price = 'bid_price'+str(i)
             # ask_qty = 'ask_qty'+str(i)
@@ -125,6 +139,8 @@ class Binance_depth(Client):
             # df_socket[ask_qty] = json_message['asks'][i][1]
         # self.df = pd.concat([self.df,df_socket],ignore_index=True)
 
+        full_book_market_dict[self.market]={'bid_qty':bid_qty,'bid_price':bid_price,'ask_qty':ask_qty,'ask_price':ask_price}
+        market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash)
 
 
     def on_open(self,ws):
@@ -136,18 +152,19 @@ class Binance_depth(Client):
 
     @classmethod
     def close_all(cls):
-        global full_book_market_dict
+        global full_book_market_dict,cash
         for self_ in Binance_depth.instance_list:
             print(f'Closing {self_.market}')
             #self_.df.to_csv(self_.market+'_socket_full_book_async.csv',index=False)
             self_.ws.close()
             len_df = self_.df.shape[0]
             print(f'{self_.market} full book closed with {len_df} data points')
-        pprint.pprint(full_book_market_dict)
+        #pprint.pprint(full_book_market_dict)
+        print(cash)
 
 if __name__ == '__main__':
-    i_max = 300
-
+    i_max = 10000
+    cash = 1000
     #market = ['btcusdt','ethusdt','ethbtc']
     #global variable to keep track of shallow book data
     market_dict = {'btcusdt':None,'ethusdt':None,'ethbtc':None}
