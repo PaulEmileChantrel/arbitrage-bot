@@ -57,10 +57,13 @@ And with 0.1% fee per trades, we have the following one :
 <img src='https://user-images.githubusercontent.com/96018383/210091053-0d4d0a56-942b-4aa8-ae7f-62b17f48ff4c.png'>
 </p>
 
-### Version 4 (Todo)
+### Version 4 
 
-Merge the data collect and the trade part
+Merge the data collect and the trade part. 
+
+We don't save the data anymore, we just keep the last current known state of the order book.
 
 ### Version 5 (Todo)
-Deploy live with real trade
-Add taker
+Deploy live with real trade (i.e. v4 with real trade capacity).
+
+Add taker order.
