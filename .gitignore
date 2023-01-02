@@ -3,4 +3,6 @@ lib
 include
 *.cfg
 *.csv
-share/*
+share
+etc
+__pycache__
