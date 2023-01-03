@@ -6,3 +6,4 @@ include
 share
 etc
 __pycache__
+config.py

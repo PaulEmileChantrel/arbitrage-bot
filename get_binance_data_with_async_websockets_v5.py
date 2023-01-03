@@ -6,8 +6,11 @@ import pprint
 import time
 import sys
 import threading
-from trading_bot_v4 import make_trade
+from trading_bot_v5 import make_trade
 import traceback
+from binance.client import Client as API_Client
+from config import api_key,api_secret
+
 
 class Client(threading.Thread):
 
@@ -59,7 +62,7 @@ class Binance_bookTicker(Client):
 
     def on_message(self,ws,message):
 
-        global market_dict,full_book_market_dict,cash
+        global market_dict,full_book_market_dict,cash,client
         json_message = json.loads(message)
         #pprint.pprint(json_message)
         market_dict[self.market] = {'bid_qty':json_message['B'],'bid_price':json_message['b'],'ask_qty':json_message['A'],'ask_price':json_message['a']}
@@ -76,7 +79,7 @@ class Binance_bookTicker(Client):
             # ws.close()
             Binance_bookTicker.close_all()
             Binance_depth.close_all()
-        market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash)
+        market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash,client)
 
     def on_open(self,ws):
         print('Opening connection!')
@@ -110,7 +113,7 @@ class Binance_depth(Client):
 
     def on_message(self,ws,message):
 
-        global full_book_market_dict,market_dict,cash
+        global full_book_market_dict,market_dict,cash,client
         json_message = json.loads(message)
         #pprint.pprint(json_message)
         # Step 1 -> update data
@@ -141,7 +144,7 @@ class Binance_depth(Client):
         # self.df = pd.concat([self.df,df_socket],ignore_index=True)
 
         full_book_market_dict[self.market]={'bid_qty':bid_qty,'bid_price':bid_price,'ask_qty':ask_qty,'ask_price':ask_price}
-        market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash)
+        market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash,client)
 
 
     def on_open(self,ws):
@@ -165,9 +168,11 @@ class Binance_depth(Client):
 
 if __name__ == '__main__':
     i_max = 10000
-    cash = 1000
+    start_cash = cash = 1000
     #market = ['btcusdt','ethusdt','ethbtc']
     #global variable to keep track of shallow book data
+    #print(api_key, api_secret)
+    client = API_Client(api_key, api_secret)
     market_dict = {'btcusdt':None,'ethusdt':None,'ethbtc':None}
     binance_btcusdt = Binance_bookTicker('btcusdt',i_max)
     binance_ethusdt = Binance_bookTicker('ethusdt',i_max)
