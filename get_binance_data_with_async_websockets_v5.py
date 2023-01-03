@@ -168,7 +168,7 @@ class Binance_depth(Client):
 
 if __name__ == '__main__':
     i_max = 10000
-    start_cash = cash = 1000
+    start_cash = cash = 100
     #market = ['btcusdt','ethusdt','ethbtc']
     #global variable to keep track of shallow book data
     #print(api_key, api_secret)
