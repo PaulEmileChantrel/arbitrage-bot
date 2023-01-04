@@ -204,10 +204,10 @@ def make_trade(market_dict,full_book_market_dict,cash,client):
 
     start_cash = cash
     # trading fee
-    fee = 0.001 #0.01 = 1%
+    fee = 0.00075 #0.01 = 1%
 
     # fees multiplier for 3 transactions
-    fee3 = (1-fee)**3
+    fee3 = (1-fee)**2
 
     btc_usdt_bid_price = float(market_dict['btcusdt']['bid_price'])
     btc_usdt_ask_price = float(market_dict['btcusdt']['ask_price'])
@@ -241,9 +241,9 @@ def make_trade(market_dict,full_book_market_dict,cash,client):
             cash,btc_usdt_bid_qty,btc_usdt_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_bid_price,eth_btc_bid_qty,eth_btc_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_bid_price,eth_usdt_ask_qty,eth_usdt_ask_price,eth_usdt_full_book_ask_qty,eth_usdt_full_book_ask_price = find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_btc_bid_qty,eth_usdt_ask_price,eth_usdt_ask_qty,cash,fee3,eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty,btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,client)#min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
 
         # if we can make a profit with sell btc_usdt, sell eth_btc and buy eth_usdt
-        # while btc_usdt_ask_price<eth_usdt_bid_price/eth_btc_ask_price*fee3:
-        #     # looking for the biggest possible position with the current order book
-        #     cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price = find_position_max2(btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth_btc_ask_qty,eth_usdt_bid_price,eth_usdt_bid_qty,cash,fee3,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty,eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty,client)#min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
+        while btc_usdt_ask_price<eth_usdt_bid_price/eth_btc_ask_price*fee3:
+            # looking for the biggest possible position with the current order book
+            cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price = find_position_max2(btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth_btc_ask_qty,eth_usdt_bid_price,eth_usdt_bid_qty,cash,fee3,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty,eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty,client)#min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
 
         #add changes to dictionaries
 
@@ -267,7 +267,7 @@ def make_trade(market_dict,full_book_market_dict,cash,client):
         full_book_market_dict['btcusdt'] = update_full_book(full_book_market_dict['btcusdt'],btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty)
         full_book_market_dict['ethusdt'] = update_full_book(full_book_market_dict['ethusdt'],eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty)
         full_book_market_dict['ethbtc'] = update_full_book(full_book_market_dict['ethbtc'],eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty)
-    if start_cash<=cash:
+    if start_cash<cash:
         print(cash)
     return market_dict,full_book_market_dict,cash
 
