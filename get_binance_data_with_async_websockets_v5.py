@@ -71,7 +71,7 @@ class Binance_bookTicker(Client):
         # We can also save the data if needed
         #df_socket = pd.DataFrame({'timestamps':[time.time()],'id':[json_message['u']],'bid_qty':[json_message['B']],'bid_price':[json_message['b']],'ask_qty':[json_message['A']],'ask_price':[json_message['a']]})
         #self.df = pd.concat([self.df,df_socket],ignore_index=True)
-
+        start_cash = cash
         self.i+=1
         print(self.i)
         if self.i > self.imax:
@@ -79,7 +79,11 @@ class Binance_bookTicker(Client):
             # ws.close()
             Binance_bookTicker.close_all()
             Binance_depth.close_all()
+
         market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash,client)
+        if start_cash != cash:
+            Binance_bookTicker.close_all()
+            Binance_depth.close_all()
 
     def on_open(self,ws):
         print('Opening connection!')
@@ -125,7 +129,7 @@ class Binance_depth(Client):
         bid_qty = []
         ask_price = []
         ask_qty = []
-
+        start_cash = cash
         for i in range(len(json_message['bids'])):
             bid_price.append(float(json_message['bids'][i][0]))
             bid_qty.append(float(json_message['bids'][i][1]))
@@ -145,7 +149,9 @@ class Binance_depth(Client):
 
         full_book_market_dict[self.market]={'bid_qty':bid_qty,'bid_price':bid_price,'ask_qty':ask_qty,'ask_price':ask_price}
         market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash,client)
-
+        if start_cash != cash:
+            Binance_bookTicker.close_all()
+            Binance_depth.close_all()
 
     def on_open(self,ws):
         print('Opening connection!')
@@ -167,7 +173,7 @@ class Binance_depth(Client):
         print(cash)
 
 if __name__ == '__main__':
-    i_max = 10000
+    i_max = 30000
     start_cash = cash = 100
     #market = ['btcusdt','ethusdt','ethbtc']
     #global variable to keep track of shallow book data

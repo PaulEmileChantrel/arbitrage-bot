@@ -58,20 +58,20 @@ def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth
     # print(info)
     # info = client.get_symbol_info('ETHUSDT')
     # print(info)
-    order = client.create_test_order(
+    order = client.create_order(
         symbol='BTCUSDT',
         side=SIDE_BUY,
         type=ORDER_TYPE_MARKET,
         quantity=str(round(max_btc,5)))#btc
-    orders = client.get_all_orders(symbol='BTCUSDT')
+    #orders = client.get_all_orders(symbol='BTCUSDT')
     print(orders)
-    order = client.create_test_order(
+    order = client.create_order(
         symbol='ETHBTC',
         side=SIDE_BUY,
         type=ORDER_TYPE_MARKET,
-        quantity=str(round(max_eth,4)))#btc
+        quoteOrderQty=str(round(max_btc,5)))#btc
 
-    order = client.create_test_order(
+    order = client.create_order(
         symbol='ETHUSDT',
         side=SIDE_SELL,
         type=ORDER_TYPE_MARKET,
@@ -144,19 +144,19 @@ def find_position_max2(btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth
     #step 4 : convert in usdt (we don't need to compare with cash)
     position_max = btc_ask_qty*btc_usdt_ask_price
     print(position_max,max_eth,max_btc)
-    order = client.create_test_order(
+    order = client.create_order(
         symbol='ETHUSDT',
         side=SIDE_BUY,
         type=ORDER_TYPE_MARKET,
         quantity=round(max_eth,4))#eth
     print(order)
-    order = client.create_test_order(
+    order = client.create_order(
         symbol='ETHBTC',
         side=SIDE_SELL,
         type=ORDER_TYPE_MARKET,
         quantity=round(max_eth,4))#eth
 
-    order = client.create_test_order(
+    order = client.create_order(
         symbol='BTCUSDT',
         side=SIDE_SELL,
         type=ORDER_TYPE_MARKET,
@@ -204,7 +204,7 @@ def make_trade(market_dict,full_book_market_dict,cash,client):
 
     start_cash = cash
     # trading fee
-    fee = 0.00 #0.01 = 1%
+    fee = 0.001 #0.01 = 1%
 
     # fees multiplier for 3 transactions
     fee3 = (1-fee)**3
