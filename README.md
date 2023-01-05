@@ -63,7 +63,10 @@ Merge the data collect and the trade part.
 
 We don't save the data anymore, we just keep the last current known state of the order book.
 
-### Version 5 (Todo)
+### Version 5 
 Deploy live with real trade (i.e. v4 with real trade capacity).
 
-Add taker order.
+Fully working but we cant get any trade with 0.075% fees.
+
+### Version 6
+Add taker order. For exemple, keep track of ETHBTC and ETHUSDT and put a limit order on BTCUSDT ready to be arbitraged. 
