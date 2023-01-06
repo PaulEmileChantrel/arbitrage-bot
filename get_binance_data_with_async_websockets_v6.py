@@ -177,15 +177,13 @@ if __name__ == '__main__':
     start_cash = cash = 100
     market1,market2,market3 = 'btcusdt','ethbtc','ethusdt'
 
-    #Binance API Client
-    client = API_Client(api_key, api_secret)
     #variable to keep track of full book data
     market_dict = {market1:None,market2:None,market3:None}
     #variable to keep track of full book data
     full_book_market_dict = {market1:None,market2:None,market3:None}
 
     #trading bot
-    bot = TraderBot(market1,market2,market3,cash,clent,market_dict,full_book_market_dict)
+    bot = TraderBot(market1,market2,market3,cash,market_dict,full_book_market_dict)
 
     binance_btcusdt = Binance_bookTicker(market1,i_max,bot)
     binance_ethbtc = Binance_bookTicker(market2,i_max,bot)

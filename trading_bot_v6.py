@@ -7,6 +7,7 @@ from binance.enums import *
 
 
 class TraderBot:
+    epsilon = 10**-12
     def __init__(self,market1,market2,market3,cash_tracker,market_dict,full_book_market_dict):
         self.market1 = market1
         self.market2 = market2
@@ -16,7 +17,7 @@ class TraderBot:
         self.market_dict = market_dict
         self.full_book_market_dict = full_book_market_dict
 
-    def get_full_book(full_book_market_dict,market):
+    def get_full_book(self,full_book_market_dict,market):
         #pprint.pprint(full_book_market_dict)
         book = full_book_market_dict[market].copy()
         #pprint.pprint(book)
@@ -29,14 +30,14 @@ class TraderBot:
 
         return bid_price,bid_qty,ask_price,ask_qty
 
-    def update_full_book(sub_full_book_market_dict,bid_price,bid_qty,ask_price,ask_qty):
+    def update_full_book(self,sub_full_book_market_dict,bid_price,bid_qty,ask_price,ask_qty):
         sub_full_book_market_dict['bid_price'] = bid_price
         sub_full_book_market_dict['bid_qty'] = bid_qty
         sub_full_book_market_dict['ask_price'] = ask_price
         sub_full_book_market_dict['ask_qty'] = ask_qty
         return sub_full_book_market_dict
 
-    def find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_btc_bid_qty,eth_usdt_ask_price,eth_usdt_ask_qty,cash,fee3,eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty,btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,client):
+    def find_position_max1(self,btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_btc_bid_qty,eth_usdt_ask_price,eth_usdt_ask_qty,cash,fee3,eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty,btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,client):
         #return the biggest cash position we can take on a trade
         # we have 3 trades cash-> btc, btc->eth, eth-> cash
 
@@ -131,7 +132,7 @@ class TraderBot:
             btc_usdt_bid_price = float('-infinity')
         return cash,btc_usdt_bid_qty,btc_usdt_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_bid_price,eth_btc_bid_qty,eth_btc_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_bid_price,eth_usdt_ask_qty,eth_usdt_ask_price,eth_usdt_full_book_ask_qty,eth_usdt_full_book_ask_price
 
-    def find_position_max2(btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth_btc_ask_qty,eth_usdt_bid_price,eth_usdt_bid_qty,cash,fee3,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty,eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty,client):
+    def find_position_max2(self,btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth_btc_ask_qty,eth_usdt_bid_price,eth_usdt_bid_qty,cash,fee3,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty,eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty,client):
 
         # similar but reverse
         # step 1 : compare cash vs usdt_qty in btc_usdt
@@ -212,7 +213,7 @@ class TraderBot:
         elif eth_usdt_full_book_bid_price==[]:
             eth_usdt_bid_price = -1
         return cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price
-    epsilon = 10**-12
+
     def make_trade(self):
         #Make a trade if possible
 
