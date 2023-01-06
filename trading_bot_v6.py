@@ -16,6 +16,12 @@ class TraderBot:
         self.binance_client = Client(api_key,api_secret)
         self.market_dict = market_dict
         self.full_book_market_dict = full_book_market_dict
+        self.limit_order_price1 = None
+        self.limit_order_price2 = None
+        # trading fee
+        self.fee = 0.00075 #0.01 = 1%
+        # fees multiplier for 3 transactions
+        self.fee3 = (1-self.fee)**2
 
     def get_full_book(self,full_book_market_dict,market):
         #pprint.pprint(full_book_market_dict)
@@ -213,16 +219,47 @@ class TraderBot:
         elif eth_usdt_full_book_bid_price==[]:
             eth_usdt_bid_price = -1
         return cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price
+    def update_limit_order1(self,order_price):
+        pass
+    def place_limit_order1(self):
+
+
+        #1)check previous limit order
+        past_order = self.limit_order_price1
+
+        #2) calcul new limit order
+
+        eth_usdt_ask_price = self.market_dict[self.market3]['ask_price']
+        eth_btc_bid_price = self.market_dict[self.market2]['bid_price']
+
+        new_order = eth_usdt_ask_price/eth_btc_bid_price/self.fee3
+        safety = 0.00001
+
+        new_order-=safety
+        new_order = round(new_order,5)
+
+        #3) Select the new order we will put knowing.
+        # we have 2 values to compare
+
+        #rule : -> I dont want to put a loosing order (with the next market buy)
+        #It means that I just need to update previous order to new order wether it's higher or lower
+        #If its the same, I wont update my limi order
+        # We don't care the btcusdt ask or bid since we will make money no matter what with this rule
+        if previous_order == new_order:
+            final_order = None
+        else:
+            final_order = new_order
+
+        if final_order:
+            self.update_limit_order1(final_order)
+
+
 
     def make_trade(self):
         #Make a trade if possible
 
         start_cash = self.cash_tracker
-        # trading fee
-        fee = 0.00075 #0.01 = 1%
 
-        # fees multiplier for 3 transactions
-        fee3 = (1-fee)**2
 
         btc_usdt_bid_price = float(self.market_dict[self.market1]['bid_price'])
         btc_usdt_ask_price = float(self.market_dict[self.market1]['ask_price'])
@@ -248,17 +285,15 @@ class TraderBot:
         # if all market is found once
         if all([btc_usdt_bid_price,eth_usdt_bid_price,eth_btc_bid_price])and all([btc_usdt_full_book_bid_price,eth_usdt_full_book_bid_price,eth_btc_full_book_bid_price]):
 
-            # if we can make a profit with buy btc_usdt, buy eth_btc and sell eth_usdt
-            # for the v3, we change the if by a while and we will update, bids/asks as they get empty when we buy
-            while btc_usdt_bid_price*fee3>eth_usdt_ask_price/eth_btc_bid_price:
+            ## Instead of checking if we can make a trade, we will check the limit price for btcusdt (and eth usdt) where we can make money with ethbtc->ethusdt (and ethbtc-> btcusdt)
+            ## Every time the shallow_book is updated, we update our limit order
+            ## When a limit order is filled, we market sell back to usdt
 
-                # looking for the biggest possible position with the current order book
-                cash,btc_usdt_bid_qty,btc_usdt_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_bid_price,eth_btc_bid_qty,eth_btc_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_bid_price,eth_usdt_ask_qty,eth_usdt_ask_price,eth_usdt_full_book_ask_qty,eth_usdt_full_book_ask_price = self.find_position_max1(btc_usdt_bid_price,btc_usdt_bid_qty,eth_btc_bid_price,eth_btc_bid_qty,eth_usdt_ask_price,eth_usdt_ask_qty,self.cash_tracker,fee3,eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty,btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,self.client)#min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
+            #btcusdt
+            self.place_limit_order1()
 
-            # if we can make a profit with sell btc_usdt, sell eth_btc and buy eth_usdt
-            while btc_usdt_ask_price<eth_usdt_bid_price/eth_btc_ask_price*fee3:
-                # looking for the biggest possible position with the current order book
-                cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price = self.find_position_max2(btc_usdt_ask_price,btc_usdt_ask_qty,eth_btc_ask_price,eth_btc_ask_qty,eth_usdt_bid_price,eth_usdt_bid_qty,self.cash_tracker,fee3,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty,eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty,self.client)#min(eth_btc_bid_qty*eth_btc_bid*btc_usdt_bid,btc_usdt_bid_qty*btc_usdt_bid,eth_usdt_ask_qty*eth_usdt_ask,eth_btc_bid_qty*eth_usdt_ask,cash)
+            #ethusdt
+            #self.place_limit_order2()
 
             #add changes to dictionaries
 
