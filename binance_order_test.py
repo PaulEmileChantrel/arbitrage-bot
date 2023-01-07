@@ -62,5 +62,27 @@ def main():
     print(btc_qty)
     print(eth_qty)
 
+
+def main2():
+    client = Client(api_key,api_secret)
+    id1 = 17083979289
+    result = client.cancel_order(
+    symbol='BTCUSDT',
+    orderId=id1)
+    print(result)
+    order = client.create_order(
+        symbol='BTCUSDT',
+        side=SIDE_BUY,
+        type=ORDER_TYPE_LIMIT,
+        timeInForce=TIME_IN_FORCE_GTC,
+        quantity=0.001,#qty of btc
+        price=10000)#price of btc
+
+    print(order)
+    order_id = order['orderId']
+    result = client.cancel_order(
+    symbol='BTCUSDT',
+    orderId=order_id)
+    print(result)
 if __name__ =='__main__':
-    main()
+    main2()

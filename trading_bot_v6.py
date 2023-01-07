@@ -4,7 +4,7 @@ import pprint
 from config import api_key, api_secret
 from binance.client import Client
 from binance.enums import *
-
+import threadind
 
 class TraderBot:
     epsilon = 10**-12
@@ -18,6 +18,12 @@ class TraderBot:
         self.full_book_market_dict = full_book_market_dict
         self.limit_order_price1 = None
         self.limit_order_price2 = None
+        self.order_id1 = None
+        self.order_id2 = None
+        self.limit_order_thread1 = None
+        self.limit_order_thread2 = None
+        real_cash = self.binance_client.get_asset_balance(asset='USDT')#Warning -> this shoudn't be hardcoded
+        self.real_cash = real_cash['free']
         # trading fee
         self.fee = 0.00075 #0.01 = 1%
         # fees multiplier for 3 transactions
@@ -219,10 +225,65 @@ class TraderBot:
         elif eth_usdt_full_book_bid_price==[]:
             eth_usdt_bid_price = -1
         return cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price
-    def update_limit_order1(self,order_price):
-        pass
+    def update_limit_order1(self,order_price,order_size):
+        order_id = self.order_id1
+
+        #cancel previous order
+        if order_id:
+            result = self.binance_client.cancel_order(
+                symbol=self.market1.upper(),
+                orderId=order_id)
+
+        #add new order
+        order = self.binance_client.create_order(
+            symbol=self.market1.upper(),
+            side=SIDE_BUY,
+            type=ORDER_TYPE_LIMIT,
+            timeInForce=TIME_IN_FORCE_GTC,
+            quantity=order_size,
+            price=order_price)
+
+        self.order_id1 = order['orderId']
+
+        #close old thread of check_limit_filled
+        if self.limit_order_thread1:
+            self.limit_order_thread1.stop()
+
+
+        #open new one
+        self.limit_order_thread1 = threadind.Thread(target=check_limit_filled,args=(self,market,))
+        self.limit_order_thread1.start()
+
     def check_limit_filled(self,market):
-        pass
+        if market == self.market1:
+            order_id = self.order_id1
+        else:
+            order_id = self.order_id2
+
+
+    def get_order_size1(self,final_order):
+
+
+        #btc size (in btc) #cash available / btc_price
+        btc_max = self.real_cash/final_order
+
+        eth_btc_bid_price = self.market_dict[self.market2]['bid_price']
+        eth_btc_bid_qty = self.market_dict[self.market2]['bid_qty']
+        eth_qty = btc_max/eth_btc_bid_price #qty I can buy with btc_max
+        eth_max = min(eth_qty,eth_btc_bid_qty) #max qty I can buy
+
+        eth_usdt_bid_price = self.market_dict[self.market3]['bid_price']
+        eth_usdt_bid_qty = self.market_dict[self.market3]['bid_qty']
+        eth_max = min(eth_max,eth_usdt_bid_qty) #max qty of eth I can sell
+
+        usdt_max = eth_max*eth_usdt_bid_price
+
+        final_btc_size = usdt_max/final_order
+
+        return final_btc_size
+
+
+
     def place_limit_order1(self):
 
 
@@ -234,7 +295,7 @@ class TraderBot:
         eth_usdt_ask_price = self.market_dict[self.market3]['ask_price']
         eth_btc_bid_price = self.market_dict[self.market2]['bid_price']
 
-        new_order = eth_usdt_ask_price/eth_btc_bid_price/self.fee3
+        new_order = eth_usdt_ask_price/eth_btc_bid_price/self.fee3 #approx btc price
         safety = 0.00001
 
         new_order-=safety
@@ -253,7 +314,8 @@ class TraderBot:
             final_order = new_order
 
         if final_order:
-            self.update_limit_order1(final_order)
+            order_size = self.get_order_size1(final_order)
+            self.update_limit_order1(final_order,order_size)
 
 
 
