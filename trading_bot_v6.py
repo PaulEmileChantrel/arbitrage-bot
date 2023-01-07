@@ -221,6 +221,8 @@ class TraderBot:
         return cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price
     def update_limit_order1(self,order_price):
         pass
+    def check_limit_filled(self,market):
+        pass
     def place_limit_order1(self):
 
 
