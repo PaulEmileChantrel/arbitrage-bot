@@ -126,5 +126,5 @@ def limit_buy_btc(client):
 
 if __name__ =='__main__':
     client = Client(api_key,api_secret)
-    limit_buy_btc(client)
+    #limit_buy_btc(client)
     market_sell_btc(client)
