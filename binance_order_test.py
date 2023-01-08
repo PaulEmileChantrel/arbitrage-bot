@@ -1,7 +1,7 @@
 from config import api_key, api_secret
 from binance.client import Client
 from binance.enums import *
-
+import time
 
 def main():
     #starting API client
@@ -62,27 +62,63 @@ def main():
     print(btc_qty)
     print(eth_qty)
 
+def market_sell_btc(client):
+    #Get BTC quantity in portfolio
+    btc_qty = client.get_asset_balance(asset='BTC')
+    btc_qty = float(btc_qty['free'])
 
-def main2():
-    client = Client(api_key,api_secret)
-    id1 = 17083979289
-    result = client.cancel_order(
-    symbol='BTCUSDT',
-    orderId=id1)
-    print(result)
+    #Sell it
+    if btc_qty:
+        order = client.create_order(
+            symbol='BTCUSDT',
+            side=SIDE_SELL,
+            type=ORDER_TYPE_MARKET,
+            quantity=str(round(btc_qty,5)))#btc
+        print('btc usdt sold success')
+
+    #check balance
+    balance = client.get_asset_balance(asset=['BTC','USDT'])
+    print(balance)
+
+def limit_buy_btc(client):
+
+
+    depth = client.get_order_book(symbol='BTCUSDT')
+    #print(depth)
+
+    btc_bid_price = float(depth['bids'][0][0]) - 0.01
+    print(btc_bid_price*0.001)
     order = client.create_order(
         symbol='BTCUSDT',
         side=SIDE_BUY,
         type=ORDER_TYPE_LIMIT,
         timeInForce=TIME_IN_FORCE_GTC,
         quantity=0.001,#qty of btc
-        price=10000)#price of btc
+        price=round(btc_bid_price,5))#price of btc
 
     print(order)
+    print('')
+
+
+
     order_id = order['orderId']
+    for _ in range(20):
+        order = client.get_order(
+        symbol='BTCUSDT',
+        orderId=order_id)
+        print(order)
+        print('')
+        time.sleep(1)
+        status = order['status']
+        if status == 'FILLED':
+            break
+
+
     result = client.cancel_order(
     symbol='BTCUSDT',
     orderId=order_id)
     print(result)
 if __name__ =='__main__':
-    main2()
+    client = Client(api_key,api_secret)
+    limit_buy_btc(client)
+    market_sell_btc(client)

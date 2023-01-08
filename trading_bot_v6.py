@@ -5,7 +5,7 @@ from config import api_key, api_secret
 from binance.client import Client
 from binance.enums import *
 import threadind
-
+import time
 class TraderBot:
     epsilon = 10**-12
     def __init__(self,market1,market2,market3,cash_tracker,market_dict,full_book_market_dict):
@@ -254,11 +254,15 @@ class TraderBot:
         self.limit_order_thread1 = threadind.Thread(target=check_limit_filled,args=(self,market,))
         self.limit_order_thread1.start()
 
-    def check_limit_filled(self,market):
-        if market == self.market1:
-            order_id = self.order_id1
-        else:
-            order_id = self.order_id2
+    def check_limit_filled1(self):
+        # if market == self.market1:
+        #     order_id = self.order_id1
+        # else:
+        #     order_id = self.order_id2
+        order_id = self.order_id1
+        #check every x seconds
+        while True:
+            time.sleep(1)
 
 
     def get_order_size1(self,final_order):
