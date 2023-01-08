@@ -77,8 +77,10 @@ def market_sell_btc(client):
         print('btc usdt sold success')
 
     #check balance
-    balance = client.get_asset_balance(asset=['BTC','USDT'])
-    print(balance)
+    btc_balance = client.get_asset_balance(asset='BTC')
+    usdt_balance = client.get_asset_balance(asset='USDT')
+    print(btc_balance)
+    print(usdt_balance)
 
 def limit_buy_btc(client):
 
@@ -100,8 +102,9 @@ def limit_buy_btc(client):
     print('')
 
 
-
+    # check if order is filled every seconds for 20s
     order_id = order['orderId']
+    filled = False
     for _ in range(20):
         order = client.get_order(
         symbol='BTCUSDT',
@@ -111,13 +114,16 @@ def limit_buy_btc(client):
         time.sleep(1)
         status = order['status']
         if status == 'FILLED':
+            filled = True
             break
 
+    #cancel order
+    if not filled:
+        result = client.cancel_order(
+        symbol='BTCUSDT',
+        orderId=order_id)
+        print(result)
 
-    result = client.cancel_order(
-    symbol='BTCUSDT',
-    orderId=order_id)
-    print(result)
 if __name__ =='__main__':
     client = Client(api_key,api_secret)
     limit_buy_btc(client)

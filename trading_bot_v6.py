@@ -6,6 +6,7 @@ from binance.client import Client
 from binance.enums import *
 import threadind
 import time
+
 class TraderBot:
     epsilon = 10**-12
     def __init__(self,market1,market2,market3,cash_tracker,market_dict,full_book_market_dict):
@@ -22,8 +23,10 @@ class TraderBot:
         self.order_id2 = None
         self.limit_order_thread1 = None
         self.limit_order_thread2 = None
+        self.executed_qty1 = 0
+        self.executed_qty2 = 0
         real_cash = self.binance_client.get_asset_balance(asset='USDT')#Warning -> this shoudn't be hardcoded
-        self.real_cash = real_cash['free']
+        self.real_cash = float(real_cash['free'])
         # trading fee
         self.fee = 0.00075 #0.01 = 1%
         # fees multiplier for 3 transactions
@@ -225,14 +228,45 @@ class TraderBot:
         elif eth_usdt_full_book_bid_price==[]:
             eth_usdt_bid_price = -1
         return cash,btc_usdt_ask_qty,btc_usdt_ask_price,btc_usdt_full_book_ask_qty,btc_usdt_full_book_ask_price,eth_btc_ask_qty,eth_btc_ask_price,eth_btc_full_book_ask_qty,eth_btc_full_book_ask_price,eth_usdt_bid_qty,eth_usdt_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_bid_price
+
+    def market_sell1(self):
+        #This function is called when the Btc order get filled or partially filled
+        # It will market buy ETHBTC and market sell ETHUSDT
+        btc_qty = self.executed_qty1
+        order = client.create_order(
+            symbol='ETHBTC',
+            side=SIDE_BUY,
+            type=ORDER_TYPE_MARKET,
+            quoteOrderQty=str(round(btc_qty,5)))#btc
+        print('eth btc buy success')
+        print(order)
+        eth_qty = order['executedQty']
+        order = client.create_order(
+            symbol='ETHUSDT',
+            side=SIDE_SELL,
+            type=ORDER_TYPE_MARKET,
+            quantity=str(round(eth_qty,4)))
+
+        print('eth usdt sell success')
+
+        usdt_balance = client.get_asset_balance(asset='USDT')
+        usdt_balance = float(usdt_balance['free'])
+        if self.real_cash<usdt_balance:
+            self.need_to_stop = True
+
     def update_limit_order1(self,order_price,order_size):
         order_id = self.order_id1
 
         #cancel previous order
         if order_id:
-            result = self.binance_client.cancel_order(
-                symbol=self.market1.upper(),
-                orderId=order_id)
+            try:
+                result = self.binance_client.cancel_order(
+                    symbol=self.market1.upper(),
+                    orderId=order_id)
+            except:
+                #try to cancel but the order just got filled
+                #market sell it
+                self.market_sell1()
 
         #add new order
         order = self.binance_client.create_order(
@@ -260,9 +294,20 @@ class TraderBot:
         # else:
         #     order_id = self.order_id2
         order_id = self.order_id1
+        self.executed_qty1 = 0
         #check every x seconds
         while True:
             time.sleep(1)
+            order = client.get_order(
+                symbol='BTCUSDT',
+                orderId=order_id)
+            status = order['status']
+            self.executed_qty1 = float(order['executedQty'])-self.executed_qty1#if its partially filled, we call the market sell function anyway
+            self.market_sell1()
+
+            if status == 'FILLED':
+                filled = True
+                break
 
 
     def get_order_size1(self,final_order):
