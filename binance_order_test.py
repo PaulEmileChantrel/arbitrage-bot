@@ -62,22 +62,27 @@ def main():
     print(btc_qty)
     print(eth_qty)
 
-def market_sell_btc(client):
+def market_sell(client,asset):
+
     #Get BTC quantity in portfolio
-    btc_qty = client.get_asset_balance(asset='BTC')
+    btc_qty = client.get_asset_balance(asset=asset)
     btc_qty = float(btc_qty['free'])
 
+    market = asset+'USDT'
+
     #Sell it
-    if btc_qty:
+    if btc_qty>0.00001:
         order = client.create_order(
-            symbol='BTCUSDT',
+            symbol=market,
             side=SIDE_SELL,
             type=ORDER_TYPE_MARKET,
             quantity=str(round(btc_qty,5)))#btc
-        print('btc usdt sold success')
+        print(f'{asset} USDT sold successfully')
+    else:
+        print(f'Not enough {asset} to make a sell')
 
     #check balance
-    btc_balance = client.get_asset_balance(asset='BTC')
+    btc_balance = client.get_asset_balance(asset=asset)
     usdt_balance = client.get_asset_balance(asset='USDT')
     print(btc_balance)
     print(usdt_balance)
@@ -127,4 +132,5 @@ def limit_buy_btc(client):
 if __name__ =='__main__':
     client = Client(api_key,api_secret)
     #limit_buy_btc(client)
-    market_sell_btc(client)
+    market_sell(client,'BTC')
+    market_sell(client,'ETH')

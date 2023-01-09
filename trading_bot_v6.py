@@ -233,7 +233,13 @@ class TraderBot:
     def market_sell1(self):
         #This function is called when the Btc order get filled or partially filled
         # It will market buy ETHBTC and market sell ETHUSDT
+
+        print(f'Market selling ETHBTC -> ETHUSDT')
         btc_qty = self.executed_qty1
+
+        btc_balance = self.binance_client.get_asset_balance(asset='BTC')
+        print(btc_qty)
+        print(btc_balance)
         order = self.binance_client.create_order(
             symbol='ETHBTC',
             side=SIDE_BUY,
@@ -261,13 +267,17 @@ class TraderBot:
         #cancel previous order
         if order_id:
             try:
+                print(f'trying to cancel order {order_id}')
                 result = self.binance_client.cancel_order(
                     symbol=self.market1.upper(),
                     orderId=order_id)
-
+                print(f'order {order_id} cancelled')
             except:
                 #try to cancel but the order just got filled
                 #market sell it
+                print(f'order {order_id} was actually filled')
+                #Since the order has been filled, we need to update self.executed_qty1
+                self.executed_qty1 = self.order_size1 - self.executed_qty1
                 self.market_sell1()
         self.order_id1 = None
         print(order_size,order_price, round(order_size,5)*order_price)
@@ -281,7 +291,7 @@ class TraderBot:
             timeInForce=TIME_IN_FORCE_GTC,
             quantity=round(order_size,5),
             price=round(order_price,2))
-
+        self.order_size1 = round(order_size,5)
         self.order_id1 = order['orderId']
         usdt_balance = self.binance_client.get_asset_balance(asset='USDT')
         self.available_cash = float(usdt_balance['free'])
@@ -302,8 +312,9 @@ class TraderBot:
         order_id = self.order_id1
         self.executed_qty1 = 0
         #check every x seconds
-        while True:
+        while True and order_id:
             time.sleep(1)
+            print(f'checking {order_id} status')
             order = client.get_order(
                 symbol='BTCUSDT',
                 orderId=order_id)
