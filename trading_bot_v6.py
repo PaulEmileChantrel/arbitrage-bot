@@ -247,7 +247,7 @@ class TraderBot:
             quoteOrderQty=str(round(btc_qty,5)))#btc
         print('eth btc buy success')
         print(order)
-        eth_qty = order['executedQty']
+        eth_qty = float(order['executedQty'])
         order = self.binance_client.create_order(
             symbol='ETHUSDT',
             side=SIDE_SELL,

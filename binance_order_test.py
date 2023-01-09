@@ -71,12 +71,13 @@ def market_sell(client,asset):
     market = asset+'USDT'
 
     #Sell it
-    if btc_qty>0.00001:
+    print(btc_qty)
+    if btc_qty>0.0001:
         order = client.create_order(
             symbol=market,
             side=SIDE_SELL,
             type=ORDER_TYPE_MARKET,
-            quantity=str(round(btc_qty,5)))#btc
+            quantity=round(btc_qty,5))#btc
         print(f'{asset} USDT sold successfully')
     else:
         print(f'Not enough {asset} to make a sell')
