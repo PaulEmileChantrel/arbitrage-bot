@@ -1,7 +1,7 @@
 from config import api_key, api_secret
 from binance.client import Client
 from binance.enums import *
-import time
+import time,math
 
 def main():
     #starting API client
@@ -63,10 +63,11 @@ def main():
     print(eth_qty)
 
 def market_sell(client,asset):
-
+    round_digit = 5 if asset =='BTC' else 4
+    round_down = 0.5*10**-round_digit
     #Get BTC quantity in portfolio
     btc_qty = client.get_asset_balance(asset=asset)
-    btc_qty = float(btc_qty['free'])
+    btc_qty = round(float(btc_qty['free'])-round_down,round_digit)
 
     market = asset+'USDT'
 
@@ -77,7 +78,7 @@ def market_sell(client,asset):
             symbol=market,
             side=SIDE_SELL,
             type=ORDER_TYPE_MARKET,
-            quantity=round(btc_qty,5))#btc
+            quantity=btc_qty)#btc
         print(f'{asset} USDT sold successfully')
     else:
         print(f'Not enough {asset} to make a sell')

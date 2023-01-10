@@ -81,6 +81,7 @@ class Binance_bookTicker(Client):
             Binance_depth.close_all()
         self.bot.make_trade()
         #market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash,client)
+        print('need to stop : ',self.bot.need_to_stop)
         if self.bot.need_to_stop:#bot safety (in case its loosing money)
             Binance_bookTicker.close_all()
             Binance_depth.close_all()
@@ -101,7 +102,7 @@ class Binance_bookTicker(Client):
             len_df = self_.df.shape[0]
             print(f'{self_.market} closed with {len_df} data points')
         #pprint.pprint(market_dict)
-        print(self.bot.cash_tracker)
+        #print(self.bot.cash_tracker)
 
 class Binance_depth(Client):
     instance_list = []
@@ -150,7 +151,7 @@ class Binance_depth(Client):
         self.bot.full_book_market_dict[self.market]={'bid_qty':bid_qty,'bid_price':bid_price,'ask_qty':ask_qty,'ask_price':ask_price}
         self.bot.make_trade()#market_dict,full_book_market_dict,cash = make_trade(self.bot.market_dict,full_book_market_dict,cash,client)
 
-
+        print('need to stop : ',self.bot.need_to_stop)
         if self.bot.need_to_stop:#bot safety (in case its loosing money)
             Binance_bookTicker.close_all()
             Binance_depth.close_all()
@@ -172,7 +173,7 @@ class Binance_depth(Client):
             len_df = self_.df.shape[0]
             print(f'{self_.market} full book closed with {len_df} data points')
         #pprint.pprint(full_book_market_dict)
-        print(self.bot.cash_tracker)
+        #print(self_.bot.cash_tracker)
 
 if __name__ == '__main__':
     i_max = 1000000

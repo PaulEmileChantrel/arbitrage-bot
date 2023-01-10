@@ -27,7 +27,7 @@ class TraderBot:
         self.executed_qty2 = 0
         real_cash = self.binance_client.get_asset_balance(asset='USDT')#Warning -> this shoudn't be hardcoded
         self.real_cash = float(real_cash['free'])
-        self.available_cash = self.real_cash
+        self.available_cash = float(real_cash['free'])
         # trading fee
         self.fee = 0.00075 #0.01 = 1%
         # fees multiplier for 3 transactions
@@ -235,31 +235,36 @@ class TraderBot:
         # It will market buy ETHBTC and market sell ETHUSDT
 
         print(f'Market selling ETHBTC -> ETHUSDT')
-        btc_qty = self.executed_qty1
+        round_down5 = 0.5*10**-5
+        round_down4 = 0.5*10**-4
+        btc_qty = round(self.executed_qty1-round_down5,5)
 
-        btc_balance = self.binance_client.get_asset_balance(asset='BTC')
+        #btc_balance = self.binance_client.get_asset_balance(asset='BTC')
         print(btc_qty)
-        print(btc_balance)
-        order = self.binance_client.create_order(
-            symbol='ETHBTC',
-            side=SIDE_BUY,
-            type=ORDER_TYPE_MARKET,
-            quoteOrderQty=str(round(btc_qty,5)))#btc
-        print('eth btc buy success')
-        print(order)
-        eth_qty = float(order['executedQty'])
-        order = self.binance_client.create_order(
-            symbol='ETHUSDT',
-            side=SIDE_SELL,
-            type=ORDER_TYPE_MARKET,
-            quantity=str(round(eth_qty,4)))
+        #print(btc_balance)
+        if btc_qty >0.00001:
+            order = self.binance_client.create_order(
+                symbol='ETHBTC',
+                side=SIDE_BUY,
+                type=ORDER_TYPE_MARKET,
+                quoteOrderQty=str(btc_qty))#btc
+            print('eth btc buy success')
+            print(order)
+            eth_qty = float(order['executedQty'])
+            order = self.binance_client.create_order(
+                symbol='ETHUSDT',
+                side=SIDE_SELL,
+                type=ORDER_TYPE_MARKET,
+                quantity=str(round(eth_qty,4)))
 
-        print('eth usdt sell success')
-
+            print('eth usdt sell success')
+        else:
+            print('not enough BTC')
         usdt_balance = self.binance_client.get_asset_balance(asset='USDT')
         usdt_balance = float(usdt_balance['free'])
-        if self.real_cash<usdt_balance:
-            self.need_to_stop = True
+        self.need_to_stop = self.real_cash>usdt_balance
+        print(f'USDT before : {self.real_cash}, USDT after full trade: {usdt_balance}, Need to stop ? -> {self.need_to_stop}')
+
 
     def update_limit_order1(self,order_price,order_size):
         order_id = self.order_id1
@@ -279,6 +284,7 @@ class TraderBot:
                 #Since the order has been filled, we need to update self.executed_qty1
                 self.executed_qty1 = self.order_size1 - self.executed_qty1
                 self.market_sell1()
+                return #We dont place a new order
         self.order_id1 = None
         print(order_size,order_price, round(order_size,5)*order_price)
 
@@ -301,7 +307,7 @@ class TraderBot:
 
 
         #open new one
-        self.limit_order_thread1 = threadind.Thread(target=check_limit_filled,args=(self,market,))
+        self.limit_order_thread1 = threading.Thread(target=check_limit_filled1,args=(self,market,))
         self.limit_order_thread1.start()
 
     def check_limit_filled1(self):
