@@ -4,6 +4,7 @@ import pprint
 from config import api_key, api_secret
 from binance.client import Client
 from binance.enums import *
+#from binance.exceptions.BinanceAPIException import *
 import threading
 import time
 
@@ -32,6 +33,8 @@ class TraderBot:
         self.fee = 0.00075 #0.01 = 1%
         # fees multiplier for 3 transactions
         self.fee3 = (1-self.fee)**2
+        self.first_run = True
+        self.need_to_stop = False
 
     def get_full_book(self,full_book_market_dict,market):
         #pprint.pprint(full_book_market_dict)
@@ -262,7 +265,7 @@ class TraderBot:
             print('not enough BTC')
         usdt_balance = self.binance_client.get_asset_balance(asset='USDT')
         usdt_balance = float(usdt_balance['free'])
-        self.need_to_stop = self.real_cash>usdt_balance
+        self.need_to_stop = self.real_cash>usdt_balance and self.real_cash*0.9<usdt_balance #usdt balance is lower than before but not too low 
         print(f'USDT before : {self.real_cash}, USDT after full trade: {usdt_balance}, Need to stop ? -> {self.need_to_stop}')
 
 
@@ -290,25 +293,29 @@ class TraderBot:
 
 
         #add new order
-        order = self.binance_client.create_order(
-            symbol=self.market1.upper(),
-            side=SIDE_BUY,
-            type=ORDER_TYPE_LIMIT,
-            timeInForce=TIME_IN_FORCE_GTC,
-            quantity=round(order_size,5),
-            price=round(order_price,2))
-        self.order_size1 = round(order_size,5)
-        self.order_id1 = order['orderId']
-        usdt_balance = self.binance_client.get_asset_balance(asset='USDT')
-        self.available_cash = float(usdt_balance['free'])
-        #close old thread of check_limit_filled
-        if self.limit_order_thread1:
-            self.limit_order_thread1.stop()
+        try:
+            order = self.binance_client.create_order(
+                symbol=self.market1.upper(),
+                side=SIDE_BUY,
+                type=ORDER_TYPE_LIMIT,
+                timeInForce=TIME_IN_FORCE_GTC,
+                quantity=round(order_size,5),
+                price=round(order_price,2))
+        except :
+            print('Api error, order not placed')
+        else:
+            self.order_size1 = round(order_size,5)
+            self.order_id1 = order['orderId']
+            usdt_balance = self.binance_client.get_asset_balance(asset='USDT')
+            self.available_cash = float(usdt_balance['free'])
+            #close old thread of check_limit_filled
+            if self.limit_order_thread1:
+                self.limit_order_thread1.stop()
 
 
-        #open new one
-        self.limit_order_thread1 = threading.Thread(target=check_limit_filled1,args=(self,market,))
-        self.limit_order_thread1.start()
+            #open new one
+            self.limit_order_thread1 = threading.Thread(target=self.check_limit_filled1,args=())
+            self.limit_order_thread1.start()
 
     def check_limit_filled1(self):
         # if market == self.market1:
@@ -319,9 +326,9 @@ class TraderBot:
         self.executed_qty1 = 0
         #check every x seconds
         while True and order_id:
-            time.sleep(1)
+            time.sleep(0.4)
             print(f'checking {order_id} status')
-            order = client.get_order(
+            order = self.binance_client.get_order(
                 symbol='BTCUSDT',
                 orderId=order_id)
             status = order['status']
@@ -365,7 +372,7 @@ class TraderBot:
         eth_btc_bid_price = float(self.market_dict[self.market2]['bid_price'])
 
         new_order = eth_usdt_ask_price/eth_btc_bid_price/self.fee3 #approx btc price
-        safety = 0.01
+        safety = 0.00
 
         new_order-=safety
         new_order = round(new_order,2)
@@ -391,80 +398,67 @@ class TraderBot:
 
         start_cash = self.cash_tracker
 
+        try:
+            btc_usdt_bid_price = float(self.market_dict[self.market1]['bid_price'])
+            btc_usdt_ask_price = float(self.market_dict[self.market1]['ask_price'])
+            btc_usdt_bid_qty = float(self.market_dict[self.market1]['bid_qty'])
+            btc_usdt_ask_qty = float(self.market_dict[self.market1]['ask_qty'])
 
-        btc_usdt_bid_price = float(self.market_dict[self.market1]['bid_price'])
-        btc_usdt_ask_price = float(self.market_dict[self.market1]['ask_price'])
-        btc_usdt_bid_qty = float(self.market_dict[self.market1]['bid_qty'])
-        btc_usdt_ask_qty = float(self.market_dict[self.market1]['ask_qty'])
+            eth_usdt_bid_price = float(self.market_dict[self.market3]['bid_price'])
+            eth_usdt_ask_price = float(self.market_dict[self.market3]['ask_price'])
+            eth_usdt_bid_qty = float(self.market_dict[self.market3]['bid_qty'])
+            eth_usdt_ask_qty = float(self.market_dict[self.market3]['ask_qty'])
 
-        eth_usdt_bid_price = float(self.market_dict[self.market3]['bid_price'])
-        eth_usdt_ask_price = float(self.market_dict[self.market3]['ask_price'])
-        eth_usdt_bid_qty = float(self.market_dict[self.market3]['bid_qty'])
-        eth_usdt_ask_qty = float(self.market_dict[self.market3]['ask_qty'])
+            eth_btc_bid_price = float(self.market_dict[self.market2]['bid_price'])
+            eth_btc_ask_price = float(self.market_dict[self.market2]['ask_price'])
+            eth_btc_bid_qty = float(self.market_dict[self.market2]['bid_qty'])
+            eth_btc_ask_qty = float(self.market_dict[self.market2]['ask_qty'])
+            #print(full_book_market_dict['ethusdt'])
 
-        eth_btc_bid_price = float(self.market_dict[self.market2]['bid_price'])
-        eth_btc_ask_price = float(self.market_dict[self.market2]['ask_price'])
-        eth_btc_bid_qty = float(self.market_dict[self.market2]['bid_qty'])
-        eth_btc_ask_qty = float(self.market_dict[self.market2]['ask_qty'])
-        #print(full_book_market_dict['ethusdt'])
+            btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty = self.get_full_book(self.full_book_market_dict,self.market1)
+            eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty = self.get_full_book(self.full_book_market_dict,self.market3)
+            eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty = self.get_full_book(self.full_book_market_dict,self.market2)
+        except:
+            pass
+        else:
+            # if all market is found once
 
-        btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty = self.get_full_book(self.full_book_market_dict,self.market1)
-        eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty = self.get_full_book(self.full_book_market_dict,self.market3)
-        eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty = self.get_full_book(self.full_book_market_dict,self.market2)
+            if all([btc_usdt_bid_price,eth_usdt_bid_price,eth_btc_bid_price])and all([btc_usdt_full_book_bid_price,eth_usdt_full_book_bid_price,eth_btc_full_book_bid_price]):
+                if self.first_run:
+                    self.first_run = False
+                    print("Starting trading")
+                ## Instead of checking if we can make a trade, we will check the limit price for btcusdt (and eth usdt) where we can make money with ethbtc->ethusdt (and ethbtc-> btcusdt)
+                ## Every time the shallow_book is updated, we update our limit order
+                ## When a limit order is filled, we market sell back to usdt
 
-        #print(eth_usdt_full_book_bid_qty)
-        # if all market is found once
-        if all([btc_usdt_bid_price,eth_usdt_bid_price,eth_btc_bid_price])and all([btc_usdt_full_book_bid_price,eth_usdt_full_book_bid_price,eth_btc_full_book_bid_price]):
+                #btcusdt
+                self.place_limit_order1()
 
-            ## Instead of checking if we can make a trade, we will check the limit price for btcusdt (and eth usdt) where we can make money with ethbtc->ethusdt (and ethbtc-> btcusdt)
-            ## Every time the shallow_book is updated, we update our limit order
-            ## When a limit order is filled, we market sell back to usdt
+                #ethusdt
+                #self.place_limit_order2()
 
-            #btcusdt
-            self.place_limit_order1()
+                #add changes to dictionaries
 
-            #ethusdt
-            #self.place_limit_order2()
+                self.market_dict[self.market1]['bid_price'] = btc_usdt_bid_price
+                self.market_dict[self.market1]['ask_price'] = btc_usdt_ask_price
+                self.market_dict[self.market1]['bid_qty'] = btc_usdt_bid_qty
+                self.market_dict[self.market1]['ask_qty'] = btc_usdt_ask_qty
 
-            #add changes to dictionaries
+                self.market_dict[self.market3]['bid_price'] = eth_usdt_bid_price
+                self.market_dict[self.market3]['ask_price'] = eth_usdt_ask_price
+                self.market_dict[self.market3]['bid_qty'] = eth_usdt_bid_qty
+                self.market_dict[self.market3]['ask_qty'] = eth_usdt_ask_qty
 
-            self.market_dict[self.market1]['bid_price'] = btc_usdt_bid_price
-            self.market_dict[self.market1]['ask_price'] = btc_usdt_ask_price
-            self.market_dict[self.market1]['bid_qty'] = btc_usdt_bid_qty
-            self.market_dict[self.market1]['ask_qty'] = btc_usdt_ask_qty
+                self.market_dict[self.market2]['bid_price'] = eth_btc_bid_price
+                self.market_dict[self.market2]['ask_price'] = eth_btc_ask_price
+                self.market_dict[self.market2]['bid_qty'] = eth_btc_bid_qty
+                self.market_dict[self.market2]['ask_qty'] = eth_btc_ask_qty
 
-            self.market_dict[self.market3]['bid_price'] = eth_usdt_bid_price
-            self.market_dict[self.market3]['ask_price'] = eth_usdt_ask_price
-            self.market_dict[self.market3]['bid_qty'] = eth_usdt_bid_qty
-            self.market_dict[self.market3]['ask_qty'] = eth_usdt_ask_qty
+                # update full_book
 
-            self.market_dict[self.market2]['bid_price'] = eth_btc_bid_price
-            self.market_dict[self.market2]['ask_price'] = eth_btc_ask_price
-            self.market_dict[self.market2]['bid_qty'] = eth_btc_bid_qty
-            self.market_dict[self.market2]['ask_qty'] = eth_btc_ask_qty
-
-            # update full_book
-
-            self.full_book_market_dict[self.market1] = self.update_full_book(self.full_book_market_dict[self.market1],btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty)
-            self.full_book_market_dict[self.market3] = self.update_full_book(self.full_book_market_dict[self.market3],eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty)
-            self.full_book_market_dict[self.market2] = self.update_full_book(self.full_book_market_dict[self.market2],eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty)
-        if start_cash<self.cash_tracker:
-            print(self.cash_tracker)
-        #return market_dict,full_book_market_dict,cash
-
-
-
-# #print(arb_possible)
-# print(cash)
-# print(len(arb_possible))
-# print(len(cash_time))
-# print((cash/start_cash-1)*100)
-# cash_time = np.array(cash_time)-start_cash
-#
-# import matplotlib.pyplot as plt
-# plt.plot(cash_time)
-# plt.title("Evolution of the cash position")
-# plt.xlabel("Time")
-# plt.ylabel("Cash ($)")
-#
-# plt.show()
+                self.full_book_market_dict[self.market1] = self.update_full_book(self.full_book_market_dict[self.market1],btc_usdt_full_book_bid_price,btc_usdt_full_book_bid_qty,btc_usdt_full_book_ask_price,btc_usdt_full_book_ask_qty)
+                self.full_book_market_dict[self.market3] = self.update_full_book(self.full_book_market_dict[self.market3],eth_usdt_full_book_bid_price,eth_usdt_full_book_bid_qty,eth_usdt_full_book_ask_price,eth_usdt_full_book_ask_qty)
+                self.full_book_market_dict[self.market2] = self.update_full_book(self.full_book_market_dict[self.market2],eth_btc_full_book_bid_price,eth_btc_full_book_bid_qty,eth_btc_full_book_ask_price,eth_btc_full_book_ask_qty)
+            if start_cash<self.cash_tracker:
+                print(self.cash_tracker)
+            #return market_dict,full_book_market_dict,cash

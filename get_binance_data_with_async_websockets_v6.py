@@ -81,7 +81,7 @@ class Binance_bookTicker(Client):
             Binance_depth.close_all()
         self.bot.make_trade()
         #market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash,client)
-        print('need to stop : ',self.bot.need_to_stop)
+        #print('need to stop : ',self.bot.need_to_stop)
         if self.bot.need_to_stop:#bot safety (in case its loosing money)
             Binance_bookTicker.close_all()
             Binance_depth.close_all()
@@ -151,7 +151,7 @@ class Binance_depth(Client):
         self.bot.full_book_market_dict[self.market]={'bid_qty':bid_qty,'bid_price':bid_price,'ask_qty':ask_qty,'ask_price':ask_price}
         self.bot.make_trade()#market_dict,full_book_market_dict,cash = make_trade(self.bot.market_dict,full_book_market_dict,cash,client)
 
-        print('need to stop : ',self.bot.need_to_stop)
+        #print('need to stop : ',self.bot.need_to_stop)
         if self.bot.need_to_stop:#bot safety (in case its loosing money)
             Binance_bookTicker.close_all()
             Binance_depth.close_all()
@@ -176,6 +176,8 @@ class Binance_depth(Client):
         #print(self_.bot.cash_tracker)
 
 if __name__ == '__main__':
+
+    #sys.tracebacklimit = 0
     i_max = 1000000
     start_cash = cash = 100
     market1,market2,market3 = 'btcusdt','ethbtc','ethusdt'
