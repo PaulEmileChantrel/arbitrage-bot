@@ -365,10 +365,10 @@ class TraderBot:
         eth_btc_bid_price = float(self.market_dict[self.market2]['bid_price'])
 
         new_order = eth_usdt_ask_price/eth_btc_bid_price/self.fee3 #approx btc price
-        safety = 0.00001
+        safety = 0.01
 
         new_order-=safety
-        new_order = round(new_order,5)
+        new_order = round(new_order,2)
 
         #3) Select the new order we will put knowing.
         # we have 2 values to compare
