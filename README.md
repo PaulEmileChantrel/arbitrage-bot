@@ -66,7 +66,13 @@ We don't save the data anymore, we just keep the last current known state of the
 ### Version 5 
 Deploy live with real trade (i.e. v4 with real trade capacity).
 
-Fully working but we cant get any trade with 0.075% fees.
+Fully working but we can't get any trade with 0.075% fees.
 
 ### Version 6
-Add taker order. For exemple, keep track of ETHBTC and ETHUSDT and put a limit order on BTCUSDT ready to be arbitraged. 
+Taker order added. For example, keep track of ETHBTC and ETHUSDT and put a limit order on BTCUSDT ready to be arbitraged. 
+
+Running properly but not making money.
+
+We could optimize using only 2 WebSockets. For example, we collect only the current bid/ask for ETHBTC and ETHUSDT and place a limit order for BTCUSDT.
+
+We also need to avoid running multiple instances of the TraderBot class in parallel since it doesn't work well.
