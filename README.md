@@ -73,6 +73,7 @@ Taker order added. For example, keep track of ETHBTC and ETHUSDT and put a limit
 
 Running properly but not making money.
 
-We could optimize using only 2 WebSockets. For example, we collect only the current bid/ask for ETHBTC and ETHUSDT and place a limit order for BTCUSDT.
+### Version 7
+We optimize using only 2 WebSockets. For example, we collect only the current bid/ask for ETHBTC and ETHUSDT and place a limit order for BTCUSDT.
 
 We also need to avoid running multiple instances of the TraderBot class in parallel since it doesn't work well.
