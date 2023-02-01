@@ -50,6 +50,7 @@ class Client(threading.Thread):
 
 class Binance_bookTicker(Client):
     instance_list = []
+    locks = {}
     def __init__(self,market,imax,bot):
         self.market = market
         self.SOCKET = "wss://stream.binance.com:9443/ws/"+market+"@bookTicker"
@@ -59,6 +60,7 @@ class Binance_bookTicker(Client):
         self.i = 0
         self.imax = imax
         Binance_bookTicker.instance_list.append(self)
+        Binance_bookTicker.locks[self.market] = threading.Lock()
 
 
     def on_message(self,ws,message):
@@ -79,7 +81,12 @@ class Binance_bookTicker(Client):
             # ws.close()
             Binance_bookTicker.close_all()
             Binance_depth.close_all()
-        self.bot.make_trade()
+        if not Binance_bookTicker.locks[self.market].locked():
+            for market in Binance_bookTicker.locks:
+                Binance_bookTicker.locks[market].acquire()
+            self.bot.make_trade()#market_dict,full_book_market_dict,cash = make_trade(self.bot.market_dict,full_book_market_dict,cash,client)
+            for market in Binance_bookTicker.locks:
+                Binance_bookTicker.locks[market].release()
         #market_dict,full_book_market_dict,cash = make_trade(market_dict,full_book_market_dict,cash,client)
         #print('need to stop : ',self.bot.need_to_stop)
         if self.bot.need_to_stop:#bot safety (in case its loosing money)
@@ -106,6 +113,7 @@ class Binance_bookTicker(Client):
 
 class Binance_depth(Client):
     instance_list = []
+    locks = {}
     def __init__(self,market,bot):
         self.market = market
         self.SOCKET = "wss://stream.binance.com:9443/ws/"+market+"@depth20@100ms"
@@ -114,6 +122,7 @@ class Binance_depth(Client):
         self.df = pd.DataFrame(columns=['timestamps','id'])
 
         Binance_depth.instance_list.append(self)
+        Binance_depth.locks[market] = threading.Lock()
 
 
     def on_message(self,ws,message):
@@ -149,8 +158,12 @@ class Binance_depth(Client):
         # self.df = pd.concat([self.df,df_socket],ignore_index=True)
 
         self.bot.full_book_market_dict[self.market]={'bid_qty':bid_qty,'bid_price':bid_price,'ask_qty':ask_qty,'ask_price':ask_price}
-        self.bot.make_trade()#market_dict,full_book_market_dict,cash = make_trade(self.bot.market_dict,full_book_market_dict,cash,client)
-
+        if not Binance_depth.locks[self.market].locked():
+            for lock in Binance_depth.locks:
+                lock.acquire()
+            self.bot.make_trade()#market_dict,full_book_market_dict,cash = make_trade(self.bot.market_dict,full_book_market_dict,cash,client)
+            for lock in Binance_depth.locks:
+                lock.release()
         #print('need to stop : ',self.bot.need_to_stop)
         if self.bot.need_to_stop:#bot safety (in case its loosing money)
             Binance_bookTicker.close_all()
@@ -193,8 +206,5 @@ if __name__ == '__main__':
     binance_ethbtc = Binance_bookTicker(market2,i_max,bot)
     binance_ethusdt = Binance_bookTicker(market3,i_max,bot)
 
-
-
-
-    binance_ethusdt.start()
     binance_ethbtc.start()
+    binance_ethusdt.start()
